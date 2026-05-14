@@ -1,11 +1,11 @@
 #ifndef INPUT_MANAGER_H
 #define INPUT_MANAGER_H
 
-#include <Arduino.h> // Gọi thư viện lõi nếu dùng PlatformIO Arduino framework
+#include <Arduino.h>
 
 class InputManager {
 public:
-    static void initPins(); // Khai báo hàm static để gọi thẳng không cần khởi tạo object
+    static void initPins();
 };
 
 #endif

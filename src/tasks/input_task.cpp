@@ -4,45 +4,81 @@
 #include "../../include/config.h"
 #include "../../include/events.h"
 
-// 1. Khai báo Queue global cho module input
+// Khai báo Queue global
 QueueHandle_t inputQueue;
+extern QueueHandle_t renderQueue; // Phải khai báo extern ở đầu file
+extern QueueHandle_t mediaQueue; // Thêm dòng này
 
-// 2. Viết hàm Ngắt (ISR) cho Nút A với cơ chế Debounce
+// Hàm Ngắt (ISR)
 void IRAM_ATTR isrButtonA() {
     static uint32_t last_isr_time = 0;
-    // Lấy thời gian thực của RTOS để chống dội phím (Debounce)
     uint32_t current_time = xTaskGetTickCountFromISR() * portTICK_PERIOD_MS; 
 
-    // Bỏ qua nếu lần ngắt trước đó cách hiện tại < 50ms (dội phím vật lý)
+    // Debounce 50ms
     if (current_time - last_isr_time > 50) { 
-        InputEvent event = {1, true}; // Tạo gói tin: Nút 1 (A) được nhấn
-        
-        // Khai báo cờ yêu cầu chuyển ngữ cảnh (Context Switch)
+        InputEvent event = {1, true}; 
         BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
         
-        // Ném gói tin vào Queue từ bên trong Ngắt
         xQueueSendFromISR(inputQueue, &event, &xHigherPriorityTaskWoken);
+        last_isr_time = current_time; 
         
-        last_isr_time = current_time; // Cập nhật thời gian
-        
-        // Ép RTOS chuyển sang chạy InputTask ngay lập tức nếu nó có Priority cao hơn
         if (xHigherPriorityTaskWoken) {
             portYIELD_FROM_ISR();
         }
     }
 }
 
-// 3. Viết Task xử lý sự kiện
+// Thêm hàm này ngay dưới hàm isrButtonA()
+void IRAM_ATTR isrButtonB() {
+    static uint32_t last_isr_time_b = 0;
+    uint32_t current_time = xTaskGetTickCountFromISR() * portTICK_PERIOD_MS; 
+
+    if (current_time - last_isr_time_b > 50) { 
+        InputEvent event = {2, true}; // <-- NÚT B có ID là 2
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
+        
+        xQueueSendFromISR(inputQueue, &event, &xHigherPriorityTaskWoken);
+        last_isr_time_b = current_time; 
+        
+        if (xHigherPriorityTaskWoken) {
+            portYIELD_FROM_ISR();
+        }
+    }
+}
+
+// Task xử lý Queue
 void InputTask(void *pvParameters) {
     InputEvent receivedEvent;
 
-    // Vòng lặp vô tận của Task
     while (1) {
-        // Task sẽ "ngủ" (Blocked) ở đây cho đến khi Queue có dữ liệu
         if (xQueueReceive(inputQueue, &receivedEvent, portMAX_DELAY) == pdPASS) {
-            // Khi có dữ liệu, thức dậy và in log
             if (receivedEvent.buttonID == 1) {
-                Serial.println("[InputTask] -> Nút A vừa được nhấn! (Đã debounce)");
+                Serial.println("[InputTask] -> Nút A vừa được nhấn!");
+    
+                // 1. Đẩy lệnh cho màn hình (Code cũ)
+                DisplayEvent drawCmd = {1, 10, 20, "HELLO ESP32"}; 
+                xQueueSend(renderQueue, &drawCmd, portMAX_DELAY); 
+
+                // 2. Đẩy lệnh phát tiếng/nháy LED cho Core 0 (MỚI)
+                MediaEvent beepCmd = {1, ""};
+                xQueueSend(mediaQueue, &beepCmd, portMAX_DELAY);
+
+                // 3. Đẩy lệnh ghi Log cho Core 0 (MỚI)
+                MediaEvent logCmd = {2, "User bam nut A"};
+                xQueueSend(mediaQueue, &logCmd, portMAX_DELAY);
+            }
+        
+            // Thêm nhánh xử lý cho Nút B
+            else if (receivedEvent.buttonID == 2) {
+                Serial.println("[InputTask] -> Nút B vừa được nhấn! (Lệnh xóa)");
+
+                // 1. Gửi lệnh Xóa màn hình sang Core 1 (cmdType = 0 là lệnh xóa đã định nghĩa ở Bước 1)
+                DisplayEvent clearCmd = {0, 0, 0, ""}; 
+                xQueueSend(renderQueue, &clearCmd, portMAX_DELAY); 
+
+                // 2. Gửi lệnh ghi Log sang Core 0
+                MediaEvent logCmd = {2, "User bam nut B"};
+                xQueueSend(mediaQueue, &logCmd, portMAX_DELAY);
             }
         }
     }
