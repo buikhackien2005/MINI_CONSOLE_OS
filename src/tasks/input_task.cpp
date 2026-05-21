@@ -5,7 +5,7 @@
 #include "../../include/events.h"
 
 // Khai báo Queue global
-QueueHandle_t inputQueue;
+extern QueueHandle_t inputQueue;
 extern QueueHandle_t renderQueue; // Phải khai báo extern ở đầu file
 extern QueueHandle_t mediaQueue; // Thêm dòng này
 

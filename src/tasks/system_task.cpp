@@ -6,7 +6,7 @@
 #include "../../lib/MediaManager/StorageDriver.h"
 
 // Khai báo Queue cho Media
-QueueHandle_t mediaQueue;
+extern QueueHandle_t mediaQueue;
 
 // Task xử lý hệ thống ngầm (Chạy trên Core 0)
 void SystemTask(void *pvParameters) {

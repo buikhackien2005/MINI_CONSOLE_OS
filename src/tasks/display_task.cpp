@@ -1,43 +1,49 @@
 #include <Arduino.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
-#include <esp_task_wdt.h> // <-- Thư viện Watchdog
+#include "freertos/semphr.h"
+#include <esp_task_wdt.h>
 #include "../../include/events.h"
 #include "../../lib/DisplayManager/DisplayManager.h"
 
-QueueHandle_t renderQueue;
+extern QueueHandle_t renderQueue;
+extern SemaphoreHandle_t spiMutex; // Lấy Mutex từ main.cpp sang
 
 void DisplayTask(void *pvParameters) {
     DisplayEvent receivedEvent;
 
-    DisplayManager::init();
+    // Lúc khởi tạo cũng đang dùng bus SPI, nên cũng phải xin khóa
+    if (xSemaphoreTake(spiMutex, portMAX_DELAY) == pdTRUE) {
+        DisplayManager::init();
+        xSemaphoreGive(spiMutex); // Khởi tạo xong phải nhả khóa ngay
+    }
 
-    // Đăng ký Task này với hệ thống Watchdog
     esp_task_wdt_add(NULL); 
 
     while (1) {
-        // Thay vì chờ vô hạn (portMAX_DELAY), ta chỉ chờ tối đa 1 giây (1000 tick)
         if (xQueueReceive(renderQueue, &receivedEvent, 1000 / portTICK_PERIOD_MS) == pdPASS) {
             
-            switch (receivedEvent.cmdType) {
-                case 0:
-                    DisplayManager::clear();
-                    DisplayManager::update();
-                    break;
-                case 1:
-                    DisplayManager::clear(); 
-                    DisplayManager::drawText(receivedEvent.x, receivedEvent.y, receivedEvent.text);
-                    DisplayManager::update(); 
-                    break;
+            // XIN KHÓA MUTEX TRƯỚC KHI VẼ MÀN HÌNH
+            // Chờ tối đa 100 tick (100ms). Nếu SystemTask đang dùng thẻ nhớ, task này sẽ bị Blocked chờ.
+            if (xSemaphoreTake(spiMutex, 100 / portTICK_PERIOD_MS) == pdTRUE) {
+                
+                switch (receivedEvent.cmdType) {
+                    case 0:
+                        DisplayManager::clear();
+                        break;
+                    case 1:
+                        DisplayManager::clear(); 
+                        DisplayManager::drawText(receivedEvent.x, receivedEvent.y, receivedEvent.text);
+                        break;
+                }
+                
+                // VẼ XONG PHẢI TRẢ KHÓA LẠI CHO HỆ THỐNG
+                xSemaphoreGive(spiMutex);
+            } else {
+                Serial.println("[CẢNH BÁO] DisplayTask không lấy được SPI Mutex (Bus đang bận)!");
             }
-            
-            // In Profiling
-            UBaseType_t ramDu = uxTaskGetStackHighWaterMark(NULL);
-            Serial.printf("[Profiler] DisplayTask RAM dư: %d Words\n", ramDu);
         }
 
-        // Bất kể có nhận được lệnh vẽ hay không, sau mỗi 1 giây task đều lọt xuống đây
-        // Gọi hàm reset (feed the dog) để báo cho TWDT biết Task này vẫn đang sống khỏe
         esp_task_wdt_reset(); 
     }
 }

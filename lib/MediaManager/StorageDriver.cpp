@@ -1,24 +1,38 @@
-// --- StorageDriver.cpp ---
 #include "StorageDriver.h"
-#include "SPIFFS.h" // Thư viện quản lý file system nội bộ của ESP32
+#include "../../include/config.h"
+#include <SD.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
+extern SemaphoreHandle_t spiMutex; // Lấy chìa khóa từ main.cpp
 
 void StorageDriver::init() {
-    // Tham số 'true' có nghĩa là: Nếu SPIFFS chưa được format, hãy format nó.
-    if (!SPIFFS.begin(true)) {
-        Serial.println("[LỖI] Không thể mount hệ thống file SPIFFS!");
-        return;
+    // Xin quyền SPI để khởi tạo thẻ nhớ
+    if (xSemaphoreTake(spiMutex, portMAX_DELAY) == pdTRUE) {
+        if (!SD.begin(SD_CS_PIN)) {
+            Serial.println("[LỖI] Không tìm thấy Thẻ nhớ SD!");
+        } else {
+            Serial.println("[HAL: Storage] Đã nhận Thẻ nhớ SD thành công.");
+        }
+        xSemaphoreGive(spiMutex);
     }
-    Serial.println("[HAL: Storage] Đã khởi tạo ổ cứng ảo SPIFFS thành công.");
 }
 
 void StorageDriver::writeLog(const char* message) {
-    // Mở file ở chế độ FILE_APPEND (Ghi nối tiếp vào cuối file)
-    File file = SPIFFS.open("/syslog.txt", FILE_APPEND);
-    if (!file) {
-        Serial.println("[HAL: Storage] Lỗi mở file ghi log!");
-        return;
+    // Xin quyền SPI trước khi ghi file
+    if (xSemaphoreTake(spiMutex, 100 / portTICK_PERIOD_MS) == pdTRUE) {
+        
+        File file = SD.open("/syslog.txt", FILE_APPEND);
+        if (file) {
+            file.println(message);
+            file.close();
+            Serial.printf("[HAL: Storage] Đã ghi thẻ SD: %s\n", message);
+        } else {
+            Serial.println("[HAL: Storage] Lỗi mở file ghi log!");
+        }
+
+        xSemaphoreGive(spiMutex); // Trả quyền cho màn hình vẽ
+    } else {
+        Serial.println("[CẢNH BÁO] Storage không lấy được SPI Mutex!");
     }
-    file.println(message);
-    file.close();
-    Serial.printf("[HAL: Storage] Đã ghi vào Flash: %s\n", message);
 }
