@@ -35,6 +35,10 @@ void DisplayTask(void *pvParameters) {
                         DisplayManager::clear(); 
                         DisplayManager::drawText(receivedEvent.x, receivedEvent.y, receivedEvent.text);
                         break;
+                    case 2: // LỆNH 2: VẼ ẢNH TỪ LOPAKA (MỚI)
+                        DisplayManager::clear(); 
+                        DisplayManager::drawImage();
+                        break;
                 }
                 
                 // VẼ XONG PHẢI TRẢ KHÓA LẠI CHO HỆ THỐNG

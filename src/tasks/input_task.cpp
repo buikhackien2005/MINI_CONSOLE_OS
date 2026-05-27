@@ -52,34 +52,30 @@ void InputTask(void *pvParameters) {
 
     while (1) {
         if (xQueueReceive(inputQueue, &receivedEvent, portMAX_DELAY) == pdPASS) {
-            if (receivedEvent.buttonID == 1) {
-                Serial.println("[InputTask] -> Nút A vừa được nhấn!");
-    
-                // 1. Đẩy lệnh cho màn hình (Code cũ)
-                DisplayEvent drawCmd = {1, 10, 20, "HELLO ESP32"}; 
-                xQueueSend(renderQueue, &drawCmd, portMAX_DELAY); 
-
-                // 2. Đẩy lệnh phát tiếng/nháy LED cho Core 0 (MỚI)
-                MediaEvent beepCmd = {1, ""};
-                xQueueSend(mediaQueue, &beepCmd, portMAX_DELAY);
-
-                // 3. Đẩy lệnh ghi Log cho Core 0 (MỚI)
-                MediaEvent logCmd = {2, "User bam nut A"};
-                xQueueSend(mediaQueue, &logCmd, portMAX_DELAY);
-            }
+            if (receivedEvent.buttonID == 1) { // BẤM NÚT A
+            Serial.println("[InputTask] -> Nút A: Yêu cầu vẽ ảnh!");
+            
+            // Đổi cmdType thành 2, không cần truyền text hay tọa độ nữa
+            DisplayEvent drawCmd = {2, 0, 0, ""}; 
+            xQueueSend(renderQueue, &drawCmd, portMAX_DELAY); 
+            
+            // Vẫn phát tiếng Bíp và ghi Log nếu bạn muốn
+            MediaEvent beepCmd = {1, ""};
+            xQueueSend(mediaQueue, &beepCmd, portMAX_DELAY);
+            MediaEvent logCmd = {2, "Ve anh Lopaka"};
+            xQueueSend(mediaQueue, &logCmd, portMAX_DELAY);
+        }
         
-            // Thêm nhánh xử lý cho Nút B
-            else if (receivedEvent.buttonID == 2) {
-                Serial.println("[InputTask] -> Nút B vừa được nhấn! (Lệnh xóa)");
+        else if (receivedEvent.buttonID == 2) { // BẤM NÚT B
+            Serial.println("[InputTask] -> Nút B: Xóa màn hình!");
 
-                // 1. Gửi lệnh Xóa màn hình sang Core 1 (cmdType = 0 là lệnh xóa đã định nghĩa ở Bước 1)
-                DisplayEvent clearCmd = {0, 0, 0, ""}; 
-                xQueueSend(renderQueue, &clearCmd, portMAX_DELAY); 
+            // cmdType = 0 đã được quy định là lệnh xóa
+            DisplayEvent clearCmd = {0, 0, 0, ""}; 
+            xQueueSend(renderQueue, &clearCmd, portMAX_DELAY); 
 
-                // 2. Gửi lệnh ghi Log sang Core 0
-                MediaEvent logCmd = {2, "User bam nut B"};
-                xQueueSend(mediaQueue, &logCmd, portMAX_DELAY);
-            }
+            MediaEvent logCmd = {2, "Xoa man hinh"};
+            xQueueSend(mediaQueue, &logCmd, portMAX_DELAY);
+        }
         }
     }
 }
