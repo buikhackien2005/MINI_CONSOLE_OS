@@ -5,26 +5,32 @@
 #include "../../lib/MediaManager/AudioDriver.h"
 #include "../../lib/MediaManager/StorageDriver.h"
 
-// Khai báo Queue cho Media
-extern QueueHandle_t mediaQueue;
+// Lấy hàng đợi đa phương tiện. ĐÃ XÓA spiMutex!
+extern QueueHandle_t mediaQueue; 
 
-// Task xử lý hệ thống ngầm (Chạy trên Core 0)
 void SystemTask(void *pvParameters) {
-    MediaEvent receivedEvent;
-
-    // Khởi tạo phần cứng liên quan đến Core 0
+    Serial.println("[Task] SystemTask (Core 0) đang khởi động...");
+    
+    // Khởi tạo Amply và Thẻ nhớ
     AudioDriver::init();
     StorageDriver::init();
 
+    MediaEvent receivedEvent;
+
     while (1) {
-        // Task ngủ chờ lệnh từ Queue
+        // Đứng chờ (Ngủ) cho đến khi có lệnh hệ thống
         if (xQueueReceive(mediaQueue, &receivedEvent, portMAX_DELAY) == pdPASS) {
             
-            if (receivedEvent.cmdType == 1) {
-                AudioDriver::playBeep();
-            } 
-            else if (receivedEvent.cmdType == 2) {
-                StorageDriver::writeLog(receivedEvent.logData);
+            // Xử lý lệnh MÀ KHÔNG CẦN XIN MUTEX nữa
+            switch (receivedEvent.cmdType) {
+                case 1: // Lệnh 1: Phát tiếng Bíp
+                    AudioDriver::playBeep();
+                    break;
+                
+                case 2: // Lệnh 2: Ghi file Log
+                    // Gọi hàm ghi log của StorageDriver (nó sẽ tự đẩy qua đường HSPI)
+                    StorageDriver::writeLog(receivedEvent.logData);
+                    break;
             }
         }
     }
