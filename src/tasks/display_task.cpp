@@ -18,7 +18,11 @@ const int SCR_H = 128;
 // --- THÔNG SỐ GAME ---
 float ball_x = SCR_W / 2, ball_y = SCR_H / 2;
 float ball_dx = 2.0, ball_dy = 2.0; 
-const float SPEED_MULTIPLIER = 1.15; // Tăng 15% tốc độ sau mỗi lần đập trúng vợt
+const float SPEED_MULTIPLIER = 1.10; // Tăng 10% tốc độ sau mỗi lần đập trúng vợt
+
+// [MỚI] Thêm biến tốc độ động cho 2 vợt
+float paddle_speed = 2.0; // Tốc độ cơ bản của người chơi
+float ai_speed = 2.0;     // Tốc độ cơ bản của AI
 
 int player_y = 50;  // Tọa độ vợt phải (Người chơi thật)
 int ai_y = 50;      // Tọa độ vợt trái (AI Máy)
@@ -28,7 +32,7 @@ const int margin = 10; // Khoảng cách từ vợt đến mép màn hình
 
 int score_ai = 0;
 int score_player = 0;
-const int MAX_SCORE = 5; // Chạm 5 điểm là kết thúc game
+const int MAX_SCORE = 7; // Chạm 7 điểm là kết thúc game
 
 int old_ball_x, old_ball_y, old_player_y, old_ai_y;
 
@@ -49,17 +53,26 @@ void drawScores() {
     tft.printf("%d", score_player);
 }
 
-// Hàm reset bóng khi có người ghi bàn
 void resetBall() {
     ball_x = SCR_W / 2;
     ball_y = SCR_H / 2;
-    ball_dx = (ball_dx > 0 ? -2.0 : 2.0); // Bắn bóng về phía người vừa ghi điểm
-    ball_dy = (random(0, 2) == 0 ? 2.0 : -2.0); // Hướng nảy ngẫu nhiên lên/xuống
+    ball_dx = (ball_dx > 0 ? -2.0 : 2.0); 
+    ball_dy = (random(0, 2) == 0 ? 2.0 : -2.0); 
     
+    // Reset tốc độ vợt về mặc định
+    paddle_speed = 2.0;
+    ai_speed = 2.0;
+    
+    // [CẬP NHẬT] Đưa 2 vợt về vị trí chính giữa màn hình
+    // Lấy chiều cao màn hình chia đôi, trừ đi một nửa chiều cao của vợt để căn giữa tuyệt đối
+    player_y = (SCR_H / 2) - (paddle_h / 2);
+    ai_y = (SCR_H / 2) - (paddle_h / 2);
+    
+    // Vẽ lại màn hình mới
     tft.fillScreen(BG_COLOR);
     drawNet();
     drawScores();
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // Nghỉ 1 giây trước khi phát bóng
+    vTaskDelay(1000 / portTICK_PERIOD_MS); 
 }
 
 void DisplayTask(void *pvParameters) {
@@ -79,29 +92,25 @@ void DisplayTask(void *pvParameters) {
         tft.fillRect(SCR_W - margin - paddle_w, old_player_y, paddle_w, paddle_h, BG_COLOR);
         tft.fillRect(margin, old_ai_y, paddle_w, paddle_h, BG_COLOR);
 
+        // [MỚI] VẼ LẠI LƯỚI VÀ ĐIỂM SỐ NGAY LẬP TỨC 
+        // Để đảm bảo chúng luôn luôn nằm trên cùng (Top layer), không bị bóng bôi đen mất
+        drawNet();
+        drawScores();
+        
         // Vẽ dặm lại nét đứt ở giữa nếu quả bóng vừa bay ngang qua làm đứt nét
         if (old_ball_x >= SCR_W/2 - 4 && old_ball_x <= SCR_W/2 + 4) drawNet();
 
-        // 3. ĐỌC JOYSTICK ANALOG (Thay thế cho nút UP/DOWN cũ)
+        // 3. ĐỌC JOYSTICK ANALOG
         int joyY = analogRead(JOY_Y_PIN);
+        if (joyY < 1500) player_y -= (int)paddle_speed; // Ép kiểu float về int
+        else if (joyY > 2500) player_y += (int)paddle_speed;
         
-        // Tùy theo hướng bạn cầm Joystick, có thể giá trị < 1500 là Đẩy lên hoặc Kéo xuống.
-        // Bạn có thể đảo dấu += và -= nếu thấy nó bị ngược tay nhé.
-        if (joyY < 1500) {
-            player_y -= 4; // Kéo lên
-        } 
-        else if (joyY > 2500) {
-            player_y += 4; // Đẩy xuống
-        }
-        
-        // Chặn không cho vợt lọt ra ngoài màn hình
         if (player_y < 0) player_y = 0;
         if (player_y > SCR_H - paddle_h) player_y = SCR_H - paddle_h;
 
-        // 4. LOGIC AI TỰ ĐỘNG CHƠI (Bên Trái)
-        // AI sẽ liên tục trượt theo tọa độ y của quả bóng, tốc độ trễ hơn bóng một chút để có thể bị thua
-        if (ai_y + paddle_h / 2 < ball_y) ai_y += 2;
-        else ai_y -= 2;
+        // 4. LOGIC AI TỰ ĐỘNG CHƠI
+        if (ai_y + paddle_h / 2 < ball_y) ai_y += (int)ai_speed;
+        else ai_y -= (int)ai_speed;
         
         if (ai_y < 0) ai_y = 0;
         if (ai_y > SCR_H - paddle_h) ai_y = SCR_H - paddle_h;
@@ -116,11 +125,16 @@ void DisplayTask(void *pvParameters) {
         // Bóng đập Vợt AI (Bên Trái)
         if (ball_x <= margin + paddle_w && ball_x >= margin) {
             if (ball_y + 4 >= ai_y && ball_y <= ai_y + paddle_h) {
-                ball_x = margin + paddle_w; // Đẩy quả bóng ra khỏi vợt tránh kẹt
+                ball_x = margin + paddle_w; 
                 ball_dx = -ball_dx;
-                ball_dx *= SPEED_MULTIPLIER; // Ép xung tốc độ bóng bay
+                
+                // Tăng tốc toàn bộ hệ thống
+                ball_dx *= SPEED_MULTIPLIER; 
                 ball_dy *= SPEED_MULTIPLIER;
-                MediaEvent beepCmd; beepCmd.cmdType = 1; xQueueSend(mediaQueue, &beepCmd, 0); // Kêu Bíp
+                paddle_speed *= SPEED_MULTIPLIER; // [MỚI] Tăng tốc vợt bạn
+                ai_speed *= SPEED_MULTIPLIER;     // [MỚI] Tăng tốc vợt AI
+                
+                MediaEvent beepCmd; beepCmd.cmdType = 1; xQueueSend(mediaQueue, &beepCmd, 0); 
             }
         }
 
@@ -129,17 +143,27 @@ void DisplayTask(void *pvParameters) {
             if (ball_y + 4 >= player_y && ball_y <= player_y + paddle_h) {
                 ball_x = SCR_W - margin - paddle_w - 4;
                 ball_dx = -ball_dx;
+                
+                // Tăng tốc toàn bộ hệ thống
                 ball_dx *= SPEED_MULTIPLIER;
                 ball_dy *= SPEED_MULTIPLIER;
-                MediaEvent beepCmd; beepCmd.cmdType = 1; xQueueSend(mediaQueue, &beepCmd, 0); // Kêu Bíp
+                paddle_speed *= SPEED_MULTIPLIER; // [MỚI] Tăng tốc vợt bạn
+                ai_speed *= SPEED_MULTIPLIER;     // [MỚI] Tăng tốc vợt AI
+                
+                MediaEvent beepCmd; beepCmd.cmdType = 1; xQueueSend(mediaQueue, &beepCmd, 0); 
             }
         }
 
-        // Khóa tốc độ tối đa để bóng không tàng hình xuyên qua vợt do bay quá nhanh
+        // Khóa tốc độ tối đa (Rất quan trọng!)
         if (ball_dx > 6.0) ball_dx = 6.0;
         if (ball_dx < -6.0) ball_dx = -6.0;
         if (ball_dy > 6.0) ball_dy = 6.0;
         if (ball_dy < -6.0) ball_dy = -6.0;
+        
+        // [MỚI] Bóng bị khóa ở 6.0 (Gấp 3 lần mức ban đầu 2.0). 
+        // Do đó Vợt cũng chỉ được tăng tối đa gấp 3 lần để tránh bay ra ngoài vũ trụ.
+        if (paddle_speed > 12.0) paddle_speed = 12.0; // 4.0 x 3 = 12.0
+        if (ai_speed > 6.0) ai_speed = 6.0;           // 2.0 x 3 = 6.0
 
         // 6. LUẬT GHI BÀN & GAME OVER
         bool isGoal = false;
