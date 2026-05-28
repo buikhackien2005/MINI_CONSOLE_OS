@@ -10,7 +10,7 @@ void DisplayManager::init() {
     tft.setTextColor(TFT_WHITE, TFT_BLACK); // Chữ trắng, nền đen (giúp đè chữ cũ không bị lem)
     tft.setTextSize(2); // Cỡ chữ lớn hơn vì độ phân giải cao hơn
     
-    Serial.println("[HAL: Display] Đã khởi tạo màn hình TFT 1.77 Inch (SPI).");
+    //Serial.println("[HAL: Display] Đã khởi tạo màn hình TFT 1.77 Inch (SPI).");
 }
 
 void DisplayManager::clear() {

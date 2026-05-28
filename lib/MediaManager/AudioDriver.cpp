@@ -27,7 +27,7 @@ void AudioDriver::init() {
     };
     i2s_set_pin(I2S_NUM_0, &pin_config);
     
-    Serial.println("[HAL: Audio] Đã khởi tạo Loa I2S (MAX98357A).");
+    //Serial.println("[HAL: Audio] Đã khởi tạo Loa I2S (MAX98357A).");
 }
 
 void AudioDriver::playBeep() {

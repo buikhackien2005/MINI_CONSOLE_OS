@@ -10,7 +10,7 @@ void StorageDriver::init() {
     if (!SD.begin(SD_CS, hspi)) { 
         Serial.println("[LỖI] Không tìm thấy Thẻ SD!");
     } else {
-        Serial.println("[HAL: Storage] Đã nhận Thẻ nhớ SD trên HSPI.");
+        //Serial.println("[HAL: Storage] Đã nhận Thẻ nhớ SD trên HSPI.");
     }
 }
 
@@ -20,6 +20,6 @@ void StorageDriver::writeLog(const char* message) {
     if (file) {
         file.println(message);
         file.close();
-        Serial.printf("[HAL: Storage] Đã ghi thẻ SD: %s\n", message);
+        //Serial.printf("[HAL: Storage] Đã ghi thẻ SD: %s\n", message);
     }
 }
