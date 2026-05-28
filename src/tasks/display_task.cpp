@@ -82,9 +82,17 @@ void DisplayTask(void *pvParameters) {
         // Vẽ dặm lại nét đứt ở giữa nếu quả bóng vừa bay ngang qua làm đứt nét
         if (old_ball_x >= SCR_W/2 - 4 && old_ball_x <= SCR_W/2 + 4) drawNet();
 
-        // 3. ĐỌC NÚT BẤM CỦA NGƯỜI CHƠI (Bên Phải - Dùng UP/DOWN)
-        if (digitalRead(BTN_UP_PIN) == LOW) player_y -= 4;
-        if (digitalRead(BTN_DOWN_PIN) == LOW) player_y += 4;
+        // 3. ĐỌC JOYSTICK ANALOG (Thay thế cho nút UP/DOWN cũ)
+        int joyY = analogRead(JOY_Y_PIN);
+        
+        // Tùy theo hướng bạn cầm Joystick, có thể giá trị < 1500 là Đẩy lên hoặc Kéo xuống.
+        // Bạn có thể đảo dấu += và -= nếu thấy nó bị ngược tay nhé.
+        if (joyY < 1500) {
+            player_y -= 4; // Kéo lên
+        } 
+        else if (joyY > 2500) {
+            player_y += 4; // Đẩy xuống
+        }
         
         // Chặn không cho vợt lọt ra ngoài màn hình
         if (player_y < 0) player_y = 0;

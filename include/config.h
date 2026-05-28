@@ -2,13 +2,10 @@
 #define CONFIG_H
 
 // ==========================================
-// 1. CẤU HÌNH CỤM NÚT BẤM (D-PAD) - BÊN TRÁI
+// 1. CẤU HÌNH MODULE JOYSTICK ANALOG
 // ==========================================
-#define BTN_UP_PIN    32
-#define BTN_DOWN_PIN  33
-#define BTN_LEFT_PIN  25
-#define BTN_RIGHT_PIN 15
-#define BTN_PRESSED_STATE 0 
+#define JOY_Y_PIN  32  // Trục Y (Lên/Xuống)
+#define JOY_SW_PIN 33  // Nút nhấn tích hợp
 
 // ==========================================
 // 2. BUS VSPI CHO MÀN HÌNH TFT - BÊN PHẢI

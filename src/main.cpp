@@ -31,12 +31,9 @@ void setup() {
     renderQueue = xQueueCreate(5, sizeof(DisplayEvent)); 
     mediaQueue = xQueueCreate(10, sizeof(MediaEvent));
 
-    // Gắn Ngắt cho 4 nút
-    attachInterrupt(digitalPinToInterrupt(BTN_UP_PIN), isrButtonUp, FALLING);
-    attachInterrupt(digitalPinToInterrupt(BTN_DOWN_PIN), isrButtonDown, FALLING); 
-    attachInterrupt(digitalPinToInterrupt(BTN_LEFT_PIN), isrButtonLeft, FALLING); 
-    attachInterrupt(digitalPinToInterrupt(BTN_RIGHT_PIN), isrButtonRight, FALLING); 
-
+    // Xóa hết 4 dòng attachInterrupt cũ đi, thay bằng cấu hình nút SW của Joystick
+    pinMode(JOY_SW_PIN, INPUT_PULLUP);
+    
     // Tạo Tasks
     xTaskCreatePinnedToCore(DisplayTask, "DisplayTask", 4096, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(InputTask, "InputTask", 2048, NULL, 2, NULL, 1);

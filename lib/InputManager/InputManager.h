@@ -7,10 +7,4 @@ public:
     static void initPins();
 };
 
-// Khai báo 4 hàm Ngắt cho 4 nút
-extern void isrButtonUp();
-extern void isrButtonDown();
-extern void isrButtonLeft();
-extern void isrButtonRight();
-
 #endif
