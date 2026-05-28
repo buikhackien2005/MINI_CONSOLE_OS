@@ -1,5 +1,4 @@
 #include "DisplayManager.h"
-#include "bitmaps.h"
 
 // Khởi tạo object tft (Chân cẳng đã được cấu hình tự động từ platformio.ini)
 extern TFT_eSPI tft = TFT_eSPI(); 
@@ -24,13 +23,4 @@ void DisplayManager::drawText(uint8_t x, uint8_t y, const char* text) {
 }
 
 void DisplayManager::drawImage() {
-    // Mã màu 0x7FC là màu Xanh Cyan lợt. TFT_BLACK là màu đen.
-    tft.drawBitmap(0, 0, image_paint_1_bits, 128, 160, 0x7FC);
-    tft.fillEllipse(76, 22, 4, 4, TFT_BLACK);
-    tft.fillEllipse(75, 142, 4, 4, TFT_BLACK);
-    tft.drawBitmap(46, 41, image_paint_4_bits, 23, 42, TFT_BLACK);
-    tft.drawBitmap(46, 80, image_paint_4_copy_1_bits, 23, 42, TFT_BLACK);
-    tft.drawBitmap(47, 44, image_paint_6_bits, 21, 76, TFT_BLACK);
-    
-    Serial.println("[HAL: Display] Đã render xong ảnh Bitmap.");
 }
