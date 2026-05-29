@@ -1,14 +1,14 @@
 #include "DisplayManager.h"
 
 // Khởi tạo object tft (Chân cẳng đã được cấu hình tự động từ platformio.ini)
-extern TFT_eSPI tft = TFT_eSPI(); 
+TFT_eSPI tft = TFT_eSPI(); 
 
 void DisplayManager::init() {
     tft.init();
-    tft.setRotation(2); // Xoay ngang màn hình (Landcape)
+    tft.setRotation(1); // Xoay ngang màn hình (Landcape)
     tft.fillScreen(TFT_BLACK); // Tô đen toàn bộ màn hình
     tft.setTextColor(TFT_WHITE, TFT_BLACK); // Chữ trắng, nền đen (giúp đè chữ cũ không bị lem)
-    tft.setTextSize(2); // Cỡ chữ lớn hơn vì độ phân giải cao hơn
+    tft.setTextSize(1); // Cỡ chữ lớn hơn vì độ phân giải cao hơn
     
     //Serial.println("[HAL: Display] Đã khởi tạo màn hình TFT 1.77 Inch (SPI).");
 }

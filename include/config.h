@@ -33,4 +33,10 @@
 #define I2S_LRC  21
 #define I2S_DIN  16
 
+// ==========================================
+// 5. CẤU HÌNH QUẢN LÝ NĂNG LƯỢNG (SLEEP MODE)
+// ==========================================
+#define TFT_BLK 26           // Chân điều khiển đèn nền màn hình (Cắm vào D26)
+#define SLEEP_TIMEOUT 30000  // Thời gian chờ để ngủ (30.000 ms = 30 giây)
+
 #endif
