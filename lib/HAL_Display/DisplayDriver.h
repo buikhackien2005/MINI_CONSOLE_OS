@@ -1,10 +1,10 @@
-#ifndef DISPLAY_MANAGER_H
-#define DISPLAY_MANAGER_H
+#ifndef DISPLAY_DRIVER_H
+#define DISPLAY_DRIVER_H
 
 #include <Arduino.h>
 #include <TFT_eSPI.h> // Sử dụng thư viện mới
 
-class DisplayManager {
+class DisplayDriver {
 public:
     static void init();
     static void clear();

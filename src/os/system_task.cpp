@@ -4,8 +4,8 @@
 #include "esp_sleep.h"
 #include "../../include/events.h"
 #include "../../include/config.h"
-#include "../../lib/MediaManager/AudioDriver.h"
-#include "../../lib/MediaManager/StorageDriver.h"
+#include "../../lib/HAL_Audio/AudioDriver.h"
+#include "../../lib/HAL_Storage/StorageDriver.h"
 
 extern QueueHandle_t mediaQueue;
 extern volatile unsigned long lastActivityTime;

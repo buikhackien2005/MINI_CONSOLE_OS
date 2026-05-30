@@ -4,7 +4,7 @@
 #include <TFT_eSPI.h> 
 #include "../../include/events.h"
 #include "../../include/config.h"
-#include "../../lib/DisplayManager/DisplayManager.h"
+#include "../../lib/HAL_Display/DisplayDriver.h"
 
 extern QueueHandle_t renderQueue;
 extern QueueHandle_t mediaQueue;

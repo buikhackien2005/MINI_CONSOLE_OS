@@ -1,8 +1,8 @@
-#ifndef INPUT_MANAGER_H
-#define INPUT_MANAGER_H
+#ifndef INPUT_DRIVER_H
+#define INPUT_DRIVER_H
 #include <Arduino.h>
 
-class InputManager {
+class InputDriver {
 public:
     static void initPins();
 };

@@ -4,8 +4,8 @@
 #include "esp_sleep.h"
 #include "../../include/config.h"
 #include "../../include/events.h"
-#include "../../lib/InputManager/InputManager.h"
-#include "../../lib/DisplayManager/DisplayManager.h"
+#include "../../lib/HAL_Input/InputDriver.h"
+#include "../../lib/HAL_Display/DisplayDriver.h"
 
 // ==========================================
 // 1. BIẾN TOÀN CỤC CỦA HỆ ĐIỀU HÀNH
@@ -49,12 +49,12 @@ void setup() {
     lastActivityTime = millis();
 
     // Khởi tạo Màn hình đầu tiên để chiếm bus SPI
-    DisplayManager::init();
+    DisplayDriver::init();
 
     // Khởi tạo điện cho thẻ nhớ (Dù chưa cắm thẻ vẫn phải gọi để chốt cấu hình SPI)
     hspi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
 
-    InputManager::initPins();
+    InputDriver::initPins();
 
     inputQueue = xQueueCreate(10, sizeof(InputEvent));
     renderQueue = xQueueCreate(5, sizeof(DisplayEvent)); 
