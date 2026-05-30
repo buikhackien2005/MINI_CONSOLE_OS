@@ -1,67 +1,125 @@
 #include <Arduino.h>
 #include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
 #include "freertos/task.h"
-#include "../../include/events.h"
+#include <SD.h> // [MỚI] Bắt buộc có để dùng các lệnh duyệt File (ls, cat)
 
-extern QueueHandle_t mediaQueue; 
-extern TaskHandle_t windowManagerTaskHandle;
-extern TaskHandle_t inputTaskHandle;
-extern TaskHandle_t systemTaskHandle;
-extern TaskHandle_t cliTaskHandle;
+extern volatile int system_state;
 
 void CliTask(void *pvParameters) {
-    // [FIX 2] Bắt CLI ngủ 2 giây lúc mới khởi động.
-    // Việc này giúp nhường đường cho các Task khác in log xong xuôi,
-    // và cho bạn đủ thời gian bật cửa sổ Serial Monitor lên.
-    vTaskDelay(2000 / portTICK_PERIOD_MS); 
-    
-    Serial.println("\n\n=======================================");
-    Serial.println("   [HỆ THỐNG] MINI-CONSOLE OS DA SAN SANG");
-    Serial.println("   Go 'help' de xem danh sach lenh.");
-    Serial.println("=======================================\n");
-    
-    // In dấu nhắc lệnh ban đầu (Đảm bảo không bị trôi)
-    Serial.print("OS_Shell> "); 
+    String input = "";
+    bool is_cli_active = false; // "Ổ khóa" của Terminal
+
+    Serial.println("[OS] Serial Port san sang. Go 'cmd' de mo Terminal.");
 
     while (1) {
         if (Serial.available() > 0) {
-            String cmd = Serial.readStringUntil('\n');
-            cmd.trim(); 
+            char c = Serial.read();
             
-            if (cmd.length() > 0) {
-                // [FIX 1] MANUAL ECHO: Bắt ESP32 in thẳng chữ bạn vừa gõ ra màn hình!
-                Serial.println(cmd); 
-                
-                // --- BỘ XỬ LÝ LỆNH ---
-                if (cmd == "help") {
-                    Serial.println("Lenh: help, ping, mem, beep, reboot");
-                } 
-                else if (cmd == "ping") {
-                    Serial.println("pong!");
-                } 
-                else if (cmd == "mem") {
-                    Serial.printf("RAM Trong: %d bytes\n", xPortGetFreeHeapSize());
-                    if (windowManagerTaskHandle) Serial.printf("WindowManagerTask du: %d words\n", uxTaskGetStackHighWaterMark(windowManagerTaskHandle));
-                    if (inputTaskHandle)   Serial.printf("InputTask du:   %d words\n", uxTaskGetStackHighWaterMark(inputTaskHandle));
-                    if (systemTaskHandle)  Serial.printf("SystemTask du:  %d words\n", uxTaskGetStackHighWaterMark(systemTaskHandle));
-                    if (cliTaskHandle)     Serial.printf("CliTask du:     %d words\n", uxTaskGetStackHighWaterMark(cliTaskHandle));
-                } 
-                else if (cmd == "beep") {
-                    MediaEvent beepCmd; beepCmd.cmdType = 1; xQueueSend(mediaQueue, &beepCmd, 0); 
-                    Serial.println("Da phat tieng Bip!");
-                } 
-                else if (cmd == "reboot") {
-                    Serial.println("Rebooting..."); vTaskDelay(500); ESP.restart(); 
-                } 
-                else {
-                    Serial.println("Lenh khong hop le!");
+            if (c == '\n' || c == '\r') {
+                if (input.length() > 0) {
+                    input.trim();
+                    
+                    // ==============================================
+                    // TẦNG 1: NGOÀI CỬA (Chỉ chờ lệnh 'cmd')
+                    // ==============================================
+                    if (!is_cli_active) {
+                        if (input == "cmd") {
+                            is_cli_active = true; // Mở khóa
+                            Serial.println("\n=================================");
+                            Serial.println("  MINI-OS BASH SHELL (v1.0)");
+                            Serial.println("  Go 'help' de xem lenh, 'exit' de thoat");
+                            Serial.println("=================================");
+                            Serial.print("root@minios:~# ");
+                        } else {
+                            // Nếu gõ linh tinh lúc chưa mở cmd, bỏ qua không làm gì cả
+                        }
+                    } 
+                    // ==============================================
+                    // TẦNG 2: BÊN TRONG SHELL (Xử lý lệnh Ubuntu)
+                    // ==============================================
+                    else {
+                        if (input == "exit") {
+                            is_cli_active = false; // Đóng khóa
+                            Serial.println("\n[Shell] Da dong Terminal.");
+                        }
+                        else if (input == "help") {
+                            Serial.println("\n--- LENH HE THONG ---");
+                            Serial.println("free   : Xem dung luong RAM");
+                            Serial.println("top    : Xem trang thai CPU/OS");
+                            Serial.println("kill   : Ep tat App dang chay");
+                            Serial.println("\n--- LENH UBUNTU (FILE SYSTEM) ---");
+                            Serial.println("ls     : Liet ke cac file tren the nho");
+                            Serial.println("cat <file> : Doc noi dung file (VD: cat config.txt)");
+                            Serial.println("clear  : Xoa trang man hinh Terminal");
+                        }
+                        else if (input == "clear") {
+                            // Gửi mã ANSI để xóa sạch màn hình Terminal (giống hệt Ubuntu)
+                            Serial.print("\033[2J\033[H"); 
+                        }
+                        else if (input == "free") {
+                            Serial.printf("\nRAM con trong: %d bytes\n", ESP.getFreeHeap());
+                        }
+                        else if (input == "top") {
+                            Serial.printf("\nSystem State: %d\n", system_state);
+                        }
+                        else if (input == "kill") {
+                            Serial.println("\nDang ep dong App...");
+                            system_state = 0;
+                        }
+                        // --- MÔ PHỎNG LỆNH 'ls' (List Directory) ---
+                        else if (input == "ls") {
+                            Serial.println();
+                            File root = SD.open("/");
+                            if (!root) {
+                                Serial.println("Loi: Khong the doc the SD!");
+                            } else {
+                                File file = root.openNextFile();
+                                while (file) {
+                                    if (file.isDirectory()) {
+                                        Serial.print("DIR  \t ");
+                                        Serial.println(file.name());
+                                    } else {
+                                        Serial.print("FILE \t ");
+                                        Serial.print(file.name());
+                                        Serial.print(" \t (");
+                                        Serial.print(file.size());
+                                        Serial.println(" bytes)");
+                                    }
+                                    file = root.openNextFile();
+                                }
+                            }
+                        }
+                        // --- MÔ PHỎNG LỆNH 'cat' (Đọc nội dung file) ---
+                        else if (input.startsWith("cat ")) {
+                            String fileName = "/" + input.substring(4); // Cắt lấy tên file sau chữ 'cat '
+                            fileName.trim();
+                            
+                            File file = SD.open(fileName);
+                            if (!file || file.isDirectory()) {
+                                Serial.println("\ncat: " + fileName + ": Khong tim thay file");
+                            } else {
+                                Serial.println("\n--- " + fileName + " ---");
+                                while (file.available()) {
+                                    Serial.write(file.read());
+                                }
+                                Serial.println("\n-------------------");
+                                file.close();
+                            }
+                        }
+                        else {
+                            Serial.println("\nbash: " + input + ": command not found");
+                        }
+                        
+                        // In lại dấu nhắc lệnh của Ubuntu nếu chưa exit
+                        if (is_cli_active) Serial.print("\nroot@minios:~# "); 
+                    }
+                    
+                    input = ""; // Xóa chuỗi cũ
                 }
-                
-                // In lại dấu nhắc lệnh chờ bạn gõ tiếp
-                Serial.print("\nOS_Shell> "); 
+            } else {
+                input += c; 
             }
         }
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(50 / portTICK_PERIOD_MS); 
     }
 }
