@@ -5,7 +5,7 @@
 #include "../../include/events.h"
 
 extern QueueHandle_t mediaQueue; 
-extern TaskHandle_t displayTaskHandle;
+extern TaskHandle_t windowManagerTaskHandle;
 extern TaskHandle_t inputTaskHandle;
 extern TaskHandle_t systemTaskHandle;
 extern TaskHandle_t cliTaskHandle;
@@ -42,7 +42,7 @@ void CliTask(void *pvParameters) {
                 } 
                 else if (cmd == "mem") {
                     Serial.printf("RAM Trong: %d bytes\n", xPortGetFreeHeapSize());
-                    if (displayTaskHandle) Serial.printf("DisplayTask du: %d words\n", uxTaskGetStackHighWaterMark(displayTaskHandle));
+                    if (windowManagerTaskHandle) Serial.printf("WindowManagerTask du: %d words\n", uxTaskGetStackHighWaterMark(windowManagerTaskHandle));
                     if (inputTaskHandle)   Serial.printf("InputTask du:   %d words\n", uxTaskGetStackHighWaterMark(inputTaskHandle));
                     if (systemTaskHandle)  Serial.printf("SystemTask du:  %d words\n", uxTaskGetStackHighWaterMark(systemTaskHandle));
                     if (cliTaskHandle)     Serial.printf("CliTask du:     %d words\n", uxTaskGetStackHighWaterMark(cliTaskHandle));

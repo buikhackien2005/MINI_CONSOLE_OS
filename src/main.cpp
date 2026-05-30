@@ -27,14 +27,14 @@ QueueHandle_t inputQueue;
 QueueHandle_t renderQueue; 
 QueueHandle_t mediaQueue; 
 
-TaskHandle_t displayTaskHandle = NULL;
+TaskHandle_t windowManagerTaskHandle = NULL;
 TaskHandle_t inputTaskHandle = NULL;
 TaskHandle_t systemTaskHandle = NULL;
 TaskHandle_t cliTaskHandle = NULL; 
 
 SPIClass hspi(HSPI);
 
-extern void DisplayTask(void *pvParameters);
+extern void WindowManagerTask(void *pvParameters);
 extern void InputTask(void *pvParameters);
 extern void SystemTask(void *pvParameters);
 extern void CliTask(void *pvParameters); 
@@ -63,7 +63,7 @@ void setup() {
     pinMode(JOY_SW_PIN, INPUT_PULLUP);
 
     // Kích hoạt các Task
-    xTaskCreatePinnedToCore(DisplayTask, "DisplayTask", 4096, NULL, 1, &displayTaskHandle, 1);
+    xTaskCreatePinnedToCore(WindowManagerTask, "WindowManagerTask", 4096, NULL, 1, &windowManagerTaskHandle, 1);
     xTaskCreatePinnedToCore(InputTask, "InputTask", 2048, NULL, 2, &inputTaskHandle, 1);
     xTaskCreatePinnedToCore(SystemTask, "SystemTask", 4096, NULL, 1, &systemTaskHandle, 0);
     xTaskCreatePinnedToCore(CliTask, "CliTask", 3072, NULL, 1, &cliTaskHandle, 0);
