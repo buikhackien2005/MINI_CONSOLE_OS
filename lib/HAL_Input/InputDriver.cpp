@@ -1,14 +1,16 @@
-#include "InputDriver.h"
+#include <Arduino.h>
 #include "../../include/config.h"
-#include "../../include/events.h"
-#include "freertos/queue.h"
+#include "InputDriver.h"
 
-extern QueueHandle_t inputQueue;
-
-// Mảng lưu thời gian bấm cuối cùng của 4 nút (Chống dội phím)
-volatile unsigned long lastDebounceTime[5] = {0, 0, 0, 0, 0}; 
-
-void InputDriver::initPins() {
-    // Chỉ cần khởi tạo nút nhấn SW tích hợp trên Joystick
+void Input_Init() {
     pinMode(JOY_SW_PIN, INPUT_PULLUP);
+}
+
+int Input_GetJoyY() {
+    // Ẩn giấu hàm analogRead của ESP32 bên trong này
+    return analogRead(JOY_Y_PIN);
+}
+
+bool Input_IsHomePressed() {
+    return digitalRead(JOY_SW_PIN) == LOW;
 }

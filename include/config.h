@@ -29,9 +29,9 @@
 // ==========================================
 // 4. CẤU HÌNH ÂM THANH I2S - BÊN PHẢI
 // ==========================================
-#define I2S_BCLK 22
-#define I2S_LRC  21
-#define I2S_DIN  16
+#define I2S_BCLK 22  // Bit Clock
+#define I2S_LRC  21  // Left/Right Clock (Word Select)
+#define I2S_DIN  16  // Data Input (Nối với DOUT của ESP32)
 
 // ==========================================
 // 5. CẤU HÌNH QUẢN LÝ NĂNG LƯỢNG (SLEEP MODE)

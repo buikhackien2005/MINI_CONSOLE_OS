@@ -1,22 +1,18 @@
 #include <Arduino.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <TFT_eSPI.h> 
-#include "../../include/events.h"
 #include "../../include/config.h"
 
-extern QueueHandle_t mediaQueue;
-extern TFT_eSPI tft; 
+// [MỚI] CHỈ IMPORT LỚP TRỪU TƯỢNG (HAL), TUYỆT ĐỐI KHÔNG DÙNG TFT_eSPI Ở ĐÂY
+#include "../../lib/HAL_Display/DisplayDriver.h"
+#include "../../lib/HAL_Input/InputDriver.h"
 
-// Nhận biến từ Hệ điều hành (Kernel)
 extern volatile int system_state;
 extern int max_score;
 extern float base_paddle_speed;
 
-// Các biến chỉ dùng nội bộ trong Game này
 static const int SCR_W = 160;
 static const int SCR_H = 128;
-#define BG_COLOR tft.color565(0, 0, 64) 
 
 static float ball_x, ball_y, ball_dx, ball_dy;
 static float paddle_speed, ai_speed;
@@ -25,15 +21,13 @@ static int old_ball_x, old_ball_y, old_player_y, old_ai_y;
 static const int paddle_w = 4, paddle_h = 24, margin = 10;
 static const float SPEED_MULTIPLIER = 1.10; 
 
-// --- Hàm tiện ích nội bộ của Game ---
 static void drawNet() {
-    for (int i = 0; i < SCR_H; i += 10) tft.drawFastVLine(SCR_W / 2, i, 5, TFT_YELLOW);
+    for (int i = 0; i < SCR_H; i += 10) Display_DrawVLine(SCR_W / 2, i, 5, COLOR_YELLOW);
 }
 
 static void drawScores() {
-    tft.setTextColor(TFT_WHITE, BG_COLOR); tft.setTextSize(2);
-    tft.setCursor(SCR_W / 2 - 30, 10); tft.printf("%d", score_ai);
-    tft.setCursor(SCR_W / 2 + 15, 10); tft.printf("%d", score_player);
+    Display_DrawInt(score_ai, SCR_W / 2 - 30, 10, 2, COLOR_WHITE, COLOR_BG);
+    Display_DrawInt(score_player, SCR_W / 2 + 15, 10, 2, COLOR_WHITE, COLOR_BG);
 }
 
 static void initPong() {
@@ -43,30 +37,21 @@ static void initPong() {
     player_y = (SCR_H / 2) - (paddle_h / 2); ai_y = (SCR_H / 2) - (paddle_h / 2);
     score_ai = 0; score_player = 0;
     
-    tft.fillScreen(BG_COLOR);
+    Display_FillScreen(COLOR_BG);
     drawNet(); drawScores();
 }
 
-// ==========================================
-// ĐÂY LÀ TIẾN TRÌNH (PROCESS) CỦA GAME
-// ==========================================
 void PingPongTask(void *pvParameters) {
-    Serial.println("[App] Game Ping Pong dang chay tren Core 1...");
     initPong();
 
     while (1) {
-        // 1. KIỂM TRA LỆNH KHAI TỬ TỪ HỆ ĐIỀU HÀNH
-        // Nếu system_state bị đổi khác 1 (Do người dùng giữ nút HOME), Game phải lập tức thoát!
-        if (system_state != 1) {
-            Serial.println("[App] Ping Pong nhan lenh thoat! Dang giai phong RAM...");
-            vTaskDelete(NULL); // Lệnh này sẽ tiêu diệt Task này vĩnh viễn
-        }
+        if (system_state != 1) { vTaskDelete(NULL); }
 
-        // 2. VẬT LÝ VÀ LOGIC GAME (Giống hệt code cũ)
         old_ball_x = (int)ball_x; old_ball_y = (int)ball_y;
         old_player_y = player_y; old_ai_y = ai_y;
 
-        int joyY = analogRead(JOY_Y_PIN);
+        // [MỚI] Sử dụng API Input thay vì analogRead
+        int joyY = Input_GetJoyY();
         if (joyY < 1500) player_y -= (int)paddle_speed; 
         else if (joyY > 2500) player_y += (int)paddle_speed;
         if (player_y < 0) player_y = 0; if (player_y > SCR_H - paddle_h) player_y = SCR_H - paddle_h;
@@ -103,38 +88,38 @@ void PingPongTask(void *pvParameters) {
 
         if (isGoal) {
             if (score_player >= max_score || score_ai >= max_score) {
-                tft.fillScreen(BG_COLOR); tft.setTextColor(TFT_YELLOW); tft.setTextSize(2);
-                tft.setCursor(35, 40);
-                if (score_player >= max_score) tft.print("YOU WIN!"); else tft.print("AI WINS!");
+                Display_FillScreen(COLOR_BG);
+                if (score_player >= max_score) Display_DrawText("YOU WIN!", 35, 40, 2, COLOR_YELLOW);
+                else Display_DrawText("AI WINS!", 35, 40, 2, COLOR_YELLOW);
+                
                 vTaskDelay(3000 / portTICK_PERIOD_MS); 
-                system_state = 0; // Đánh tín hiệu về Menu
+                system_state = 0; 
             } else {
                 ball_x = SCR_W/2; ball_y = SCR_H/2;
                 ball_dx = (ball_dx > 0 ? -2.0 : 2.0); ball_dy = (random(0, 2) == 0 ? 2.0 : -2.0); 
                 paddle_speed = base_paddle_speed; ai_speed = base_paddle_speed;
                 player_y = (SCR_H / 2) - (paddle_h / 2); ai_y = (SCR_H / 2) - (paddle_h / 2);
-                tft.fillScreen(BG_COLOR); drawNet(); drawScores();
+                Display_FillScreen(COLOR_BG); drawNet(); drawScores();
                 vTaskDelay(1000 / portTICK_PERIOD_MS); 
             }
         } else {
-            if ((int)ball_x != old_ball_x || (int)ball_y != old_ball_y) tft.fillRect(old_ball_x, old_ball_y, 4, 4, BG_COLOR);
-            if (player_y != old_player_y) tft.fillRect(SCR_W - margin - paddle_w, old_player_y, paddle_w, paddle_h, BG_COLOR);
-            if (ai_y != old_ai_y) tft.fillRect(margin, old_ai_y, paddle_w, paddle_h, BG_COLOR);
+            // [MỚI] Xóa vết cũ và vẽ lại vật thể mới bằng Display API
+            if ((int)ball_x != old_ball_x || (int)ball_y != old_ball_y) Display_DrawRect(old_ball_x, old_ball_y, 4, 4, COLOR_BG);
+            if (player_y != old_player_y) Display_DrawRect(SCR_W - margin - paddle_w, old_player_y, paddle_w, paddle_h, COLOR_BG);
+            if (ai_y != old_ai_y) Display_DrawRect(margin, old_ai_y, paddle_w, paddle_h, COLOR_BG);
 
             if (old_ball_y <= 30) drawScores();
             if (old_ball_x >= SCR_W/2 - 5 && old_ball_x <= SCR_W/2 + 5) drawNet();
 
-            tft.fillRect((int)ball_x, (int)ball_y, 4, 4, TFT_WHITE);
-            tft.fillRect(SCR_W - margin - paddle_w, player_y, paddle_w, paddle_h, TFT_WHITE); 
-            tft.fillRect(margin, ai_y, paddle_w, paddle_h, TFT_WHITE); 
+            Display_DrawRect((int)ball_x, (int)ball_y, 4, 4, COLOR_WHITE);
+            Display_DrawRect(SCR_W - margin - paddle_w, player_y, paddle_w, paddle_h, COLOR_WHITE); 
+            Display_DrawRect(margin, ai_y, paddle_w, paddle_h, COLOR_WHITE); 
         }
 
         vTaskDelay(20 / portTICK_PERIOD_MS); 
     }
 }
 
-// Hàm này được OS gọi để khởi tạo Task Game
 void AppPingPong_Start() {
-    // Khai sinh một Task mới, chạy hàm PingPongTask, nằm trên Core 1
     xTaskCreatePinnedToCore(PingPongTask, "PingPong", 4096, NULL, 1, NULL, 1);
 }

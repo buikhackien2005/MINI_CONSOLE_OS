@@ -1,10 +1,9 @@
-#ifndef INPUT_DRIVER_H
-#define INPUT_DRIVER_H
-#include <Arduino.h>
+#ifndef HAL_INPUT_H
+#define HAL_INPUT_H
 
-class InputDriver {
-public:
-    static void initPins();
-};
+// Các hàm API tiêu chuẩn để các App và OS gọi
+void Input_Init();
+int Input_GetJoyY();
+bool Input_IsHomePressed();
 
 #endif

@@ -1,12 +1,9 @@
-// --- StorageDriver.h ---
-#ifndef STORAGE_DRIVER_H
-#define STORAGE_DRIVER_H
+#ifndef HAL_STORAGE_H
+#define HAL_STORAGE_H
 
-#include <Arduino.h>
+#include <stdbool.h>
 
-class StorageDriver {
-public:
-    static void init();
-    static void writeLog(const char* message);
-};
+bool Storage_Init();
+void Storage_WriteLog(const char* message);
+
 #endif

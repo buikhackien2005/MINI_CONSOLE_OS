@@ -2,27 +2,23 @@
 #include <SPI.h>
 #include <esp_task_wdt.h>
 #include "esp_sleep.h"
-#include "../../include/config.h"
-#include "../../include/events.h"
-#include "../../lib/HAL_Input/InputDriver.h"
-#include "../../lib/HAL_Display/DisplayDriver.h"
+#include "../include/config.h"
+#include "../include/events.h"
 
-// ==========================================
-// 1. BIẾN TOÀN CỤC CỦA HỆ ĐIỀU HÀNH
-// ==========================================
+// [MỚI] Gọi đúng đường dẫn Lớp trừu tượng HAL
+#include "../lib/HAL_Input/InputDriver.h"
+#include "../lib/HAL_Display/DisplayDriver.h"
+
+// [MỚI] Sử dụng API của Tầng HAL
+#include "../../lib/HAL_Audio/AudioDriver.h"
+#include "../../lib/HAL_Storage/StorageDriver.h"
+
 volatile unsigned long lastActivityTime = 0; 
-
-// Thông số Game mặc định (Dùng khi không có thẻ nhớ)
 int max_score = 7;             
 float base_paddle_speed = 2.0; 
-
-// Biến điều khiển Trạng thái (0 = Menu, 1 = Game, 2 = Music)
 volatile int system_state = 0; 
 volatile bool menu_selected = false; 
 
-// ==========================================
-// 2. QUEUE & THẺ CĂN CƯỚC TASK
-// ==========================================
 QueueHandle_t inputQueue;
 QueueHandle_t renderQueue; 
 QueueHandle_t mediaQueue; 
@@ -43,32 +39,28 @@ void setup() {
     Serial.begin(115200);
     esp_task_wdt_init(3, true); 
 
-    // Bật đèn nền và khởi động đồng hồ bấm giờ Sleep Mode
     pinMode(TFT_BLK, OUTPUT);
     digitalWrite(TFT_BLK, HIGH);
     lastActivityTime = millis();
 
-    // Khởi tạo Màn hình đầu tiên để chiếm bus SPI
-    DisplayDriver::init();
-
-    // Khởi tạo điện cho thẻ nhớ (Dù chưa cắm thẻ vẫn phải gọi để chốt cấu hình SPI)
+    // [ĐÃ SỬA] Gọi hàm API chuẩn của HAL
+    Display_Init();
+    Input_Init();
+    Audio_Init();     // [MỚI] Khởi tạo chân Loa
+    
     hspi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+    Storage_Init();   // [MỚI] Khởi tạo Thẻ nhớ SD
 
-    InputDriver::initPins();
+    hspi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
 
     inputQueue = xQueueCreate(10, sizeof(InputEvent));
     renderQueue = xQueueCreate(5, sizeof(DisplayEvent)); 
     mediaQueue = xQueueCreate(10, sizeof(MediaEvent));
 
-    pinMode(JOY_SW_PIN, INPUT_PULLUP);
-
-    // Kích hoạt các Task
-    xTaskCreatePinnedToCore(WindowManagerTask, "WindowManagerTask", 4096, NULL, 1, &windowManagerTaskHandle, 1);
+    xTaskCreatePinnedToCore(WindowManagerTask, "WindowManager", 4096, NULL, 1, &windowManagerTaskHandle, 1);
     xTaskCreatePinnedToCore(InputTask, "InputTask", 2048, NULL, 2, &inputTaskHandle, 1);
     xTaskCreatePinnedToCore(SystemTask, "SystemTask", 4096, NULL, 1, &systemTaskHandle, 0);
-    xTaskCreatePinnedToCore(CliTask, "CliTask", 3072, NULL, 1, &cliTaskHandle, 0);
+    xTaskCreatePinnedToCore(CliTask, "CliTask", 4096, NULL, 1, &cliTaskHandle, 0);
 }
 
-void loop() { 
-    vTaskDelete(NULL); 
-}
+void loop() { vTaskDelete(NULL); }

@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "../../include/config.h"
+#include "../../lib/HAL_Input/InputDriver.h" // [MỚI]
 
 extern volatile unsigned long lastActivityTime;
 extern volatile int system_state;
@@ -9,28 +10,24 @@ extern volatile bool menu_selected;
 
 void InputTask(void *pvParameters) {
     while (1) {
-        if (digitalRead(JOY_SW_PIN) == LOW) {
+        // [ĐÃ SỬA] Dùng API thay vì digitalRead
+        if (Input_IsHomePressed()) {
             lastActivityTime = millis(); 
             unsigned long pressTime = millis();
             
-            // Chờ người dùng nhả tay ra
-            while(digitalRead(JOY_SW_PIN) == LOW) { vTaskDelay(10); } 
+            while(Input_IsHomePressed()) { vTaskDelay(10); } 
             
             unsigned long releaseTime = millis();
             unsigned long holdDuration = releaseTime - pressTime;
 
             if (holdDuration > 1000) {
-                // BẤM GIỮ HƠN 1 GIÂY -> LỆNH HOME (VỀ MENU)
                 if (system_state != 0) {
-                    Serial.println("[OS] Nhận lệnh HOME. Đóng App, quay về Menu!");
-                    system_state = 0; // Đổi trạng thái về Menu
+                    Serial.println("[OS] Nhan lenh HOME. Quay ve Menu!");
+                    system_state = 0; 
                 }
             } 
             else if (holdDuration > 50) {
-                // BẤM NGẮN (CHỐNG NHIỄU 50ms) -> LỆNH SELECT (CHỌN APP)
-                if (system_state == 0) {
-                    menu_selected = true; 
-                }
+                if (system_state == 0) menu_selected = true; 
             }
         }
         vTaskDelay(50 / portTICK_PERIOD_MS); 

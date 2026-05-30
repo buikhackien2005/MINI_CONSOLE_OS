@@ -1,12 +1,7 @@
-// --- AudioDriver.h ---
-#ifndef AUDIO_DRIVER_H
-#define AUDIO_DRIVER_H
+#ifndef HAL_AUDIO_H
+#define HAL_AUDIO_H
 
-#include <Arduino.h>
+void Audio_Init();
+void Audio_PlayBeep();
 
-class AudioDriver {
-public:
-    static void init();
-    static void playBeep();
-};
 #endif

@@ -1,26 +1,26 @@
+#include <TFT_eSPI.h>
 #include "DisplayDriver.h"
 
-// Khởi tạo object tft (Chân cẳng đã được cấu hình tự động từ platformio.ini)
-TFT_eSPI tft = TFT_eSPI(); 
+// Biến tft vật lý được giam lỏng ở đây, không cho thoát ra ngoài!
+TFT_eSPI tft = TFT_eSPI();
 
-void DisplayDriver::init() {
+void Display_Init() {
     tft.init();
-    tft.setRotation(1); // Xoay ngang màn hình (Landcape)
-    tft.fillScreen(TFT_BLACK); // Tô đen toàn bộ màn hình
-    tft.setTextColor(TFT_WHITE, TFT_BLACK); // Chữ trắng, nền đen (giúp đè chữ cũ không bị lem)
-    tft.setTextSize(1); // Cỡ chữ lớn hơn vì độ phân giải cao hơn
-    
-    //Serial.println("[HAL: Display] Đã khởi tạo màn hình TFT 1.77 Inch (SPI).");
+    tft.setRotation(1);
+    tft.fillScreen(COLOR_BLACK);
 }
 
-void DisplayDriver::clear() {
-    tft.fillScreen(TFT_BLACK); // Việc tô 40KB màu đen trực tiếp qua SPI sẽ mất khoảng 10-20ms
+void Display_FillScreen(uint16_t color) { tft.fillScreen(color); }
+void Display_DrawRect(int x, int y, int w, int h, uint16_t color) { tft.fillRect(x, y, w, h, color); }
+void Display_DrawVLine(int x, int y, int h, uint16_t color) { tft.drawFastVLine(x, y, h, color); }
+void Display_DrawHLine(int x, int y, int w, uint16_t color) { tft.drawFastHLine(x, y, w, color); }
+
+void Display_DrawText(const char* text, int x, int y, int size, uint16_t color) {
+    tft.setTextColor(color); tft.setTextSize(size);
+    tft.setCursor(x, y); tft.print(text);
 }
 
-void DisplayDriver::drawText(uint8_t x, uint8_t y, const char* text) {
-    tft.setCursor(x, y);
-    tft.print(text); 
-}
-
-void DisplayDriver::drawImage() {
+void Display_DrawInt(int num, int x, int y, int size, uint16_t color, uint16_t bg_color) {
+    tft.setTextColor(color, bg_color); tft.setTextSize(size);
+    tft.setCursor(x, y); tft.printf("%d", num);
 }

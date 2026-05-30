@@ -1,25 +1,27 @@
-#include "StorageDriver.h"
-#include "../../include/config.h"
-#include <SD.h>
+#include <Arduino.h>
 #include <SPI.h>
+#include <SD.h>
+#include "../../include/config.h"
+#include "StorageDriver.h"
 
-extern SPIClass hspi; // Lấy luồng HSPI từ main.cpp
+extern SPIClass hspi; // Lấy bus SPI từ main.cpp sang
 
-void StorageDriver::init() {
-    // Ép Thẻ nhớ dùng luồng hspi
-    if (!SD.begin(SD_CS, hspi)) { 
-        Serial.println("[LỖI] Không tìm thấy Thẻ SD!");
-    } else {
-        //Serial.println("[HAL: Storage] Đã nhận Thẻ nhớ SD trên HSPI.");
+bool Storage_Init() {
+    Serial.println("[HAL] Dang khoi tao the SD...");
+    if (!SD.begin(SD_CS, hspi)) {
+        Serial.println("[HAL_Lỗi] Khong tim thay the SD!");
+        return false;
     }
+    return true;
 }
 
-void StorageDriver::writeLog(const char* message) {
-    // KHÔNG CẦN MUTEX NỮA! Ghi thẳng vào thẻ!
+void Storage_WriteLog(const char* message) {
+    // Mở file syslog.txt ở chế độ Ghi nối tiếp (Append)
     File file = SD.open("/syslog.txt", FILE_APPEND);
-    if (file) {
+    if(file) {
         file.println(message);
         file.close();
-        //Serial.printf("[HAL: Storage] Đã ghi thẻ SD: %s\n", message);
+    } else {
+        Serial.println("[HAL_Lỗi] Khong the ghi log vao the SD!");
     }
 }
