@@ -18,6 +18,7 @@ int max_score = 7;
 float base_paddle_speed = 2.0; 
 volatile int system_state = 0; 
 volatile bool menu_selected = false;
+volatile bool request_full_redraw = false; // [MỚI] Cờ báo hiệu cần khôi phục giao diện
 int system_brightness = 100;   // [MỚI] Biến lưu độ sáng màn hình (10% - 100%)
 
 QueueHandle_t inputQueue;

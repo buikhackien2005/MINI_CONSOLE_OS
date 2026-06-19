@@ -10,6 +10,7 @@ extern volatile int system_state;
 extern volatile bool menu_selected;
 extern volatile unsigned long lastActivityTime;
 extern int system_brightness;
+extern volatile bool request_full_redraw;
 
 static int settings_index = 0;
 static bool force_redraw = true;
@@ -46,6 +47,12 @@ void SettingsTask(void *pvParameters) {
     while (1) {
         // Lệnh giết Task từ OS khi user giữ nút HOME
         if (system_state != 3) { vTaskDelete(NULL); }
+
+        // [MỚI] Tự chữa lành UI cho Settings
+        if (request_full_redraw && system_state == 3) {
+            force_redraw = true;
+            request_full_redraw = false;
+        }
 
         if (force_redraw) {
             drawSettingsUI();

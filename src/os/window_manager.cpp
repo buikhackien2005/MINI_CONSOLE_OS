@@ -9,39 +9,32 @@
 extern volatile int system_state;
 extern volatile bool menu_selected;
 extern volatile unsigned long lastActivityTime;
+extern volatile bool request_full_redraw;
 
 int menu_index = 0; 
 bool force_redraw_menu = true;
 
 void drawMenu() {
     Display_FillScreen(COLOR_BLACK);
-    Display_DrawText("MINI OS", 20, 5, 2, COLOR_GREEN);
-    Display_DrawHLine(0, 25, 160, COLOR_GREEN);
+    Display_DrawText("MINI OS", 20, 5, 2, COLOR_GREEN); 
+    Display_DrawHLine(0, 25, 160, COLOR_GREEN);         
 
-    // 0x8410 là mã màu Xám đậm (Gray)
     if (menu_index == 0) { 
-        Display_DrawRect(10, 45, 140, 20, COLOR_BLUE); 
-        Display_DrawText("> 1. Game Ping Pong", 15, 50, 1, COLOR_WHITE);
-    } else {
-        Display_DrawText("> 1. Game Ping Pong", 15, 50, 1, 0x8410); 
-    }
+        Display_DrawRect(10, 35, 140, 20, COLOR_BLUE); 
+        Display_DrawText("> 1. Game Ping Pong", 15, 40, 1, COLOR_WHITE);
+    } else Display_DrawText("> 1. Game Ping Pong", 15, 40, 1, 0x8410); 
 
     if (menu_index == 1) { 
-        Display_DrawRect(10, 75, 140, 20, COLOR_BLUE); 
-        Display_DrawText("> 2. Music Player", 15, 80, 1, COLOR_WHITE);
-    } else {
-        Display_DrawText("> 2. Music Player", 15, 80, 1, 0x8410);
-    }
-
-    // Dòng 1 và 2 cũ giữ nguyên...
-    if (menu_index == 2) { 
-        Display_DrawRect(10, 105, 140, 20, COLOR_BLUE); 
-        Display_DrawText("> 3. Settings", 15, 110, 1, COLOR_WHITE);
-    } else {
-        Display_DrawText("> 3. Settings", 15, 110, 1, 0x8410);
-    }
+        Display_DrawRect(10, 60, 140, 20, COLOR_BLUE); 
+        Display_DrawText("> 2. Music Player", 15, 65, 1, COLOR_WHITE);
+    } else Display_DrawText("> 2. Music Player", 15, 65, 1, 0x8410);
     
-    // Dòng chữ thoát sẽ nằm an toàn ở dưới cùng
+    if (menu_index == 2) { 
+        Display_DrawRect(10, 85, 140, 20, COLOR_BLUE); 
+        Display_DrawText("> 3. Settings", 15, 90, 1, COLOR_WHITE);
+    } else Display_DrawText("> 3. Settings", 15, 90, 1, 0x8410);
+    
+    // Tọa độ y=115 đảm bảo an toàn nằm dưới cùng màn hình
     Display_DrawText("Giu 'SW' 1.5s de Thoat", 10, 115, 1, COLOR_YELLOW);
 }
 
@@ -49,6 +42,10 @@ void WindowManagerTask(void *pvParameters) {
     Serial.println("[OS] Window Manager khoi dong...");
 
     while (1) {
+        if (request_full_redraw && system_state == 0) {
+            force_redraw_menu = true;
+            request_full_redraw = false;
+        }
         if (system_state == 0) {
             if (force_redraw_menu) { drawMenu(); force_redraw_menu = false; }
 

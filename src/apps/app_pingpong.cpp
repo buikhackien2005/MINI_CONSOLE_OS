@@ -13,6 +13,7 @@ extern QueueHandle_t mediaQueue;    // Lấy hòm thư của Hệ điều hành
 extern volatile int system_state;
 extern int max_score;
 extern float base_paddle_speed;
+extern volatile bool request_full_redraw;
 
 static const int SCR_W = 160;
 static const int SCR_H = 128;
@@ -49,6 +50,16 @@ void PingPongTask(void *pvParameters) {
 
     while (1) {
         if (system_state != 1) { vTaskDelete(NULL); }
+
+        // [MỚI] Tự chữa lành UI cho Ping Pong
+        if (request_full_redraw && system_state == 1) {
+            Display_FillScreen(COLOR_BG);
+            drawNet(); 
+            drawScores();
+            // Ép vẽ lại vợt và bóng
+            old_ball_x = -1; old_player_y = -1; old_ai_y = -1; 
+            request_full_redraw = false;
+        }
 
         old_ball_x = (int)ball_x; old_ball_y = (int)ball_y;
         old_player_y = player_y; old_ai_y = ai_y;

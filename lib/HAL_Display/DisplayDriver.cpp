@@ -16,10 +16,17 @@ void Display_Init() {
 }
 
 void Display_SetBrightness(int percent) {
-    if (percent < 10) percent = 10;   // Không cho tắt tối thui
+    // [MỚI] Ngoại lệ đặc biệt: Số 0 có nghĩa là tắt hẳn màn hình (dành cho Sleep Mode)
+    if (percent == 0) {
+        ledcWrite(0, 0); 
+        return;
+    }
+    
+    // Giới hạn cho người dùng (10% - 100%)
+    if (percent < 10) percent = 10;   
     if (percent > 100) percent = 100;
     
-    // Đổi từ 0-100% sang thang đo 0-255 của PWM 8-bit
+    // Đổi từ phần trăm sang thang đo 0-255 của PWM 8-bit
     int duty_cycle = (percent * 255) / 100; 
     ledcWrite(0, duty_cycle);
 }

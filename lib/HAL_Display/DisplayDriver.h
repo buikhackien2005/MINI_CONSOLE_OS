@@ -10,6 +10,7 @@
 #define COLOR_BLUE   0x001F
 #define COLOR_GREEN  0x07E0
 #define COLOR_BG     0x0008 // Màu nền xanh đen của Game
+#define COLOR_RED    0xF800 // [MỚI] Thêm màu đỏ
 
 void Display_Init();
 void Display_SetBrightness(int percent); // [MỚI]

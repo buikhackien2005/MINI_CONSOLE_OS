@@ -112,3 +112,27 @@ void Storage_WriteLog(const char* message) {
         rootFile.close();
     }
 }
+
+// ==========================================
+// 5. CẢM BIẾN HOT-SWAP (CẮM RÚT NÓNG)
+// ==========================================
+int Storage_CheckHotSwap() {
+    if (is_sd_mounted) {
+        // Đang cắm -> Ép ESP32 "gõ cửa" đọc vật lý thẻ nhớ
+        File test_read = SD.open("/");
+        if (!test_read) {
+            // Mở thất bại -> Thẻ đã bị rút!
+            SD.end(); // Dọn dẹp đường truyền SPI
+            is_sd_mounted = false;
+            return -1; // Trả về tín hiệu VỪA RÚT THẺ
+        }
+        test_read.close(); // Mở thành công thì đóng lại ngay
+    } else {
+        // Chưa cắm -> Thử kết nối lại
+        if (SD.begin(SD_CS, hspi)) {
+            is_sd_mounted = true;
+            return 1; // Trả về tín hiệu VỪA CẮM THẺ
+        }
+    }
+    return 0; // Trạng thái không đổi
+}
