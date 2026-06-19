@@ -12,7 +12,7 @@ extern float base_paddle_speed;
 extern int system_brightness;     // [SỬA Ở ĐÂY 2] Thêm dòng này để mượn biến độ sáng từ main.cpp sang
 
 // [MỚI] Cờ trạng thái theo dõi xem thẻ SD có đang được cắm không
-static bool is_sd_mounted = false;
+bool is_sd_mounted = false;
 
 // ==========================================
 // 1. KHỞI TẠO ROOT FS (Ổ ĐĨA NỘI BỘ)

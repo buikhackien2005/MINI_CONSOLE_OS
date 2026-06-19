@@ -15,6 +15,9 @@ extern volatile bool request_full_redraw;
 // [MỚI] Mượn biến lưu độ sáng hiện tại từ OS để khôi phục sau khi ngủ dậy
 extern int system_brightness; 
 
+// [MỚI] Mượn biến thời gian
+extern int sys_hour, sys_minute, sys_second;
+
 void SystemTask(void *pvParameters) {
     MediaEvent receivedEvent;
     Serial.println("[OS] System Task (Core 0) dang chay ngam...");
@@ -32,6 +35,26 @@ void SystemTask(void *pvParameters) {
             }
         } 
         else {
+            // ==================================================
+            // [MỚI] TRÁI TIM ĐẾM NHỊP THỜI GIAN THỰC (RTC)
+            // ==================================================
+            static unsigned long last_time_tick = 0;
+            if (millis() - last_time_tick >= 1000) {
+                last_time_tick = millis();
+                sys_second++;
+                if (sys_second >= 60) {
+                    sys_second = 0;
+                    sys_minute++;
+                    if (sys_minute >= 60) {
+                        sys_minute = 0;
+                        sys_hour++;
+                        if (sys_hour >= 24) sys_hour = 0;
+                    }
+                    // Đồng hồ thay đổi mỗi phút -> Ra lệnh vẽ lại màn hình
+                    request_full_redraw = true; 
+                }
+            }
+            
             // ==================================================
             // 1. KIỂM TRA HOT-SWAP THẺ SD (Mỗi 2 giây)
             // ==================================================

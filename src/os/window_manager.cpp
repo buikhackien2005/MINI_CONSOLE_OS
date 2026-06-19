@@ -11,31 +11,39 @@ extern volatile bool menu_selected;
 extern volatile unsigned long lastActivityTime;
 extern volatile bool request_full_redraw;
 
+extern int sys_hour, sys_minute;
+extern bool is_sd_mounted;
+
 int menu_index = 0; 
 bool force_redraw_menu = true;
 
 void drawMenu() {
     Display_FillScreen(COLOR_BLACK);
-    Display_DrawText("MINI OS", 20, 5, 2, COLOR_GREEN); 
-    Display_DrawHLine(0, 25, 160, COLOR_GREEN);         
+    
+    // 1. Vẽ chữ "MINI OS" ở chính giữa, trên cùng (Thoáng đãng hoàn toàn)
+    Display_DrawText("MINI OS", 38, 5, 2, COLOR_GREEN); 
 
+    // 2. Vẽ danh sách Menu
     if (menu_index == 0) { 
-        Display_DrawRect(10, 35, 140, 20, COLOR_BLUE); 
+        Display_DrawRect(10, 35, 140, 18, COLOR_BLUE); 
         Display_DrawText("> 1. Game Ping Pong", 15, 40, 1, COLOR_WHITE);
     } else Display_DrawText("> 1. Game Ping Pong", 15, 40, 1, 0x8410); 
 
     if (menu_index == 1) { 
-        Display_DrawRect(10, 60, 140, 20, COLOR_BLUE); 
-        Display_DrawText("> 2. Music Player", 15, 65, 1, COLOR_WHITE);
-    } else Display_DrawText("> 2. Music Player", 15, 65, 1, 0x8410);
+        Display_DrawRect(10, 55, 140, 18, COLOR_BLUE); 
+        Display_DrawText("> 2. Music Player", 15, 60, 1, COLOR_WHITE);
+    } else Display_DrawText("> 2. Music Player", 15, 60, 1, 0x8410);
     
     if (menu_index == 2) { 
-        Display_DrawRect(10, 85, 140, 20, COLOR_BLUE); 
-        Display_DrawText("> 3. Settings", 15, 90, 1, COLOR_WHITE);
-    } else Display_DrawText("> 3. Settings", 15, 90, 1, 0x8410);
+        Display_DrawRect(10, 75, 140, 18, COLOR_BLUE); 
+        Display_DrawText("> 3. Settings", 15, 80, 1, COLOR_WHITE);
+    } else Display_DrawText("> 3. Settings", 15, 80, 1, 0x8410);
     
-    // Tọa độ y=115 đảm bảo an toàn nằm dưới cùng màn hình
-    Display_DrawText("Giu 'SW' 1.5s de Thoat", 10, 115, 1, COLOR_YELLOW);
+    // 3. Đẩy dòng chữ hướng dẫn lên Y = 100 để nhường chỗ cho Đáy
+    Display_DrawText("Giu 'SW' de Thoat", 25, 100, 1, COLOR_YELLOW);
+
+    // 4. Vẽ thanh Trạng thái (SD & Giờ) đè lên dưới cùng
+    Display_DrawTaskbar(sys_hour, sys_minute, is_sd_mounted);
 }
 
 void WindowManagerTask(void *pvParameters) {

@@ -21,6 +21,11 @@ volatile bool menu_selected = false;
 volatile bool request_full_redraw = false; // [MỚI] Cờ báo hiệu cần khôi phục giao diện
 int system_brightness = 100;   // [MỚI] Biến lưu độ sáng màn hình (10% - 100%)
 
+// [MỚI] Biến lưu trữ thời gian thực (Mặc định khởi động là 12:00:00)
+int sys_hour = 12;
+int sys_minute = 0;
+int sys_second = 0;
+
 QueueHandle_t inputQueue;
 QueueHandle_t renderQueue; 
 QueueHandle_t mediaQueue; 

@@ -10,4 +10,6 @@ void Storage_LoadConfig();   // [MỚI] Hàm chuyên dụng để đọc file co
 void Storage_SaveConfig();   // [MỚI] Hàm chuyên dụng để lưu file config
 int Storage_CheckHotSwap(); // [MỚI] Trả về 1 (Vừa cắm), -1 (Vừa rút), 0 (Không đổi)
 
+extern bool is_sd_mounted; // [MỚI] Chia sẻ trạng thái cho UI đọc
+
 #endif

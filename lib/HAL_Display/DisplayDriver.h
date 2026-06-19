@@ -21,4 +21,7 @@ void Display_DrawHLine(int x, int y, int w, uint16_t color);
 void Display_DrawText(const char* text, int x, int y, int size, uint16_t color);
 void Display_DrawInt(int num, int x, int y, int size, uint16_t color, uint16_t bg_color);
 
+void Display_FillRect(int x, int y, int w, int h, uint16_t color); // Hàm tô màu khối
+void Display_DrawTaskbar(int hour, int minute, bool sd_ok);        // Hàm vẽ Taskbar
+
 #endif

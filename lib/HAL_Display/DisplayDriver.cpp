@@ -45,3 +45,21 @@ void Display_DrawInt(int num, int x, int y, int size, uint16_t color, uint16_t b
     tft.setTextColor(color, bg_color); tft.setTextSize(size);
     tft.setCursor(x, y); tft.printf("%d", num);
 }
+
+void Display_FillRect(int x, int y, int w, int h, uint16_t color) {
+    tft.fillRect(x, y, w, h, color);
+}
+
+void Display_DrawTaskbar(int hour, int minute, bool sd_ok) {
+    // 1. Vẽ trạng thái thẻ SD ở góc Trái (Không vẽ nền nữa)
+    if (sd_ok) {
+        Display_DrawText("SD", 5, 118, 1, COLOR_GREEN);
+    } else {
+        Display_DrawText("NO SD", 5, 118, 1, COLOR_RED);
+    }
+
+    // 2. Vẽ Đồng hồ ở góc Phải
+    char time_str[10];
+    sprintf(time_str, "%02d:%02d", hour, minute); 
+    Display_DrawText(time_str, 125, 118, 1, COLOR_WHITE); 
+}
