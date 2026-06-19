@@ -54,7 +54,7 @@ void SystemTask(void *pvParameters) {
                     request_full_redraw = true; 
                 }
             }
-            
+
             // ==================================================
             // 1. KIỂM TRA HOT-SWAP THẺ SD (Mỗi 2 giây)
             // ==================================================
@@ -94,6 +94,11 @@ void SystemTask(void *pvParameters) {
 
                 // --- SAU KHI BẤM NÚT ĐỂ THỨC DẬY SẼ CHẠY TIẾP Ở ĐÂY ---
                 Serial.println("[OS] He thong da THUC DAY!");
+
+                // [MỚI] Chặn sự kiện click nhầm khi thức dậy
+                extern volatile bool menu_selected;
+                vTaskDelay(500 / portTICK_PERIOD_MS); // Đợi 0.5s để người dùng thả nút ra
+                menu_selected = false;                // Ép xóa cờ click bị nhận nhầm
                 
                 // [ĐÃ SỬA LỖI XUNG ĐỘT] Bật lại đúng độ sáng mà người dùng đã cài
                 Display_SetBrightness(system_brightness); 
