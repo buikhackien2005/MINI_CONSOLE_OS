@@ -1,13 +1,14 @@
 #include <Arduino.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <SD.h> // [MỚI] Bắt buộc có để dùng các lệnh duyệt File (ls, cat)
+#include <SD.h> 
+#include <LittleFS.h> // [MỚI] Bổ sung thư viện quản lý Ổ C:
 
 extern volatile int system_state;
 
 void CliTask(void *pvParameters) {
     String input = "";
-    bool is_cli_active = false; // "Ổ khóa" của Terminal
+    bool is_cli_active = false; 
 
     Serial.println("[OS] Serial Port san sang. Go 'cmd' de mo Terminal.");
 
@@ -24,14 +25,12 @@ void CliTask(void *pvParameters) {
                     // ==============================================
                     if (!is_cli_active) {
                         if (input == "cmd") {
-                            is_cli_active = true; // Mở khóa
+                            is_cli_active = true;
                             Serial.println("\n=================================");
-                            Serial.println("  MINI-OS BASH SHELL (v1.0)");
+                            Serial.println("  MINI-OS BASH SHELL (v2.0 - Dual Drive)");
                             Serial.println("  Go 'help' de xem lenh, 'exit' de thoat");
                             Serial.println("=================================");
                             Serial.print("root@minios:~# ");
-                        } else {
-                            // Nếu gõ linh tinh lúc chưa mở cmd, bỏ qua không làm gì cả
                         }
                     } 
                     // ==============================================
@@ -39,7 +38,7 @@ void CliTask(void *pvParameters) {
                     // ==============================================
                     else {
                         if (input == "exit") {
-                            is_cli_active = false; // Đóng khóa
+                            is_cli_active = false; 
                             Serial.println("\n[Shell] Da dong Terminal.");
                         }
                         else if (input == "help") {
@@ -47,13 +46,12 @@ void CliTask(void *pvParameters) {
                             Serial.println("free   : Xem dung luong RAM");
                             Serial.println("top    : Xem trang thai CPU/OS");
                             Serial.println("kill   : Ep tat App dang chay");
-                            Serial.println("\n--- LENH UBUNTU (FILE SYSTEM) ---");
-                            Serial.println("ls     : Liet ke cac file tren the nho");
-                            Serial.println("cat <file> : Doc noi dung file (VD: cat config.txt)");
+                            Serial.println("\n--- LENH FILE SYSTEM ---");
+                            Serial.println("ls     : Liet ke file tren RootFS va SD Card");
+                            Serial.println("cat <file> : Doc noi dung file (VD: cat /syslog.txt)");
                             Serial.println("clear  : Xoa trang man hinh Terminal");
                         }
                         else if (input == "clear") {
-                            // Gửi mã ANSI để xóa sạch màn hình Terminal (giống hệt Ubuntu)
                             Serial.print("\033[2J\033[H"); 
                         }
                         else if (input == "free") {
@@ -66,43 +64,59 @@ void CliTask(void *pvParameters) {
                             Serial.println("\nDang ep dong App...");
                             system_state = 0;
                         }
-                        // --- MÔ PHỎNG LỆNH 'ls' (List Directory) ---
+                        // ==========================================
+                        // [MỚI] LỆNH 'ls' THÔNG MINH (Quét 2 ổ đĩa)
+                        // ==========================================
                         else if (input == "ls") {
-                            Serial.println();
-                            File root = SD.open("/");
-                            if (!root) {
-                                Serial.println("Loi: Khong the doc the SD!");
-                            } else {
-                                File file = root.openNextFile();
+                            Serial.println("\n--- [ ROOT FS (Bo nho trong) ] ---");
+                            File root1 = LittleFS.open("/");
+                            if (root1) {
+                                File file = root1.openNextFile();
+                                if (!file) Serial.println("(Thu muc trong)");
                                 while (file) {
-                                    if (file.isDirectory()) {
-                                        Serial.print("DIR  \t ");
-                                        Serial.println(file.name());
-                                    } else {
-                                        Serial.print("FILE \t ");
-                                        Serial.print(file.name());
-                                        Serial.print(" \t (");
-                                        Serial.print(file.size());
-                                        Serial.println(" bytes)");
-                                    }
-                                    file = root.openNextFile();
+                                    Serial.printf("FILE \t %s \t (%d bytes)\n", file.name(), file.size());
+                                    file = root1.openNextFile();
                                 }
                             }
-                        }
-                        // --- MÔ PHỎNG LỆNH 'cat' (Đọc nội dung file) ---
-                        else if (input.startsWith("cat ")) {
-                            String fileName = "/" + input.substring(4); // Cắt lấy tên file sau chữ 'cat '
-                            fileName.trim();
-                            
-                            File file = SD.open(fileName);
-                            if (!file || file.isDirectory()) {
-                                Serial.println("\ncat: " + fileName + ": Khong tim thay file");
+
+                            Serial.println("\n--- [ SD CARD (O cam ngoai) ] ---");
+                            File root2 = SD.open("/");
+                            if (root2) {
+                                File file = root2.openNextFile();
+                                if (!file) Serial.println("(Thu muc trong)");
+                                while (file) {
+                                    Serial.printf("FILE \t %s \t (%d bytes)\n", file.name(), file.size());
+                                    file = root2.openNextFile();
+                                }
                             } else {
-                                Serial.println("\n--- " + fileName + " ---");
+                                Serial.println("(Khong co the SD)");
+                            }
+                        }
+                        // ==========================================
+                        // [MỚI] LỆNH 'cat' THÔNG MINH (Tìm trên 2 ổ)
+                        // ==========================================
+                        else if (input.startsWith("cat ")) {
+                            String fileName = input.substring(4); 
+                            fileName.trim();
+                            // Tự động thêm dấu '/' ở đầu nếu người dùng quên gõ
+                            if (!fileName.startsWith("/")) fileName = "/" + fileName; 
+                            
+                            // Ưu tiên tìm trong Root FS trước
+                            File file = LittleFS.open(fileName, FILE_READ);
+                            
+                            // Nếu không có trong RootFS, tìm tiếp ở thẻ SD
+                            if (!file || file.isDirectory()) {
+                                file = SD.open(fileName, FILE_READ);
+                            }
+
+                            if (!file || file.isDirectory()) {
+                                Serial.println("\ncat: " + fileName + ": Khong tim thay file tren bat ky o dia nao!");
+                            } else {
+                                Serial.println("\n--- Doc tu: " + fileName + " ---");
                                 while (file.available()) {
                                     Serial.write(file.read());
                                 }
-                                Serial.println("\n-------------------");
+                                Serial.println("\n-----------------------------");
                                 file.close();
                             }
                         }
@@ -110,11 +124,9 @@ void CliTask(void *pvParameters) {
                             Serial.println("\nbash: " + input + ": command not found");
                         }
                         
-                        // In lại dấu nhắc lệnh của Ubuntu nếu chưa exit
                         if (is_cli_active) Serial.print("\nroot@minios:~# "); 
                     }
-                    
-                    input = ""; // Xóa chuỗi cũ
+                    input = ""; 
                 }
             } else {
                 input += c; 

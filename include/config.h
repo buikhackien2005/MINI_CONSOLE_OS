@@ -4,7 +4,8 @@
 // ==========================================
 // 1. CẤU HÌNH MODULE JOYSTICK ANALOG
 // ==========================================
-#define JOY_Y_PIN  32  // Trục Y (Lên/Xuống)
+#define JOY_Y_PIN 32  // Trục Y (Lên/Xuống)
+#define JOY_X_PIN 35  // [MỚI] Chân VRx của Joystick
 #define JOY_SW_PIN 33  // Nút nhấn tích hợp
 
 // ==========================================

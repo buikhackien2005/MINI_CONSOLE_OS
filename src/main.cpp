@@ -17,7 +17,8 @@ volatile unsigned long lastActivityTime = 0;
 int max_score = 7;             
 float base_paddle_speed = 2.0; 
 volatile int system_state = 0; 
-volatile bool menu_selected = false; 
+volatile bool menu_selected = false;
+int system_brightness = 100;   // [MỚI] Biến lưu độ sáng màn hình (10% - 100%)
 
 QueueHandle_t inputQueue;
 QueueHandle_t renderQueue; 
@@ -39,8 +40,8 @@ void setup() {
     Serial.begin(115200);
     esp_task_wdt_init(3, true); 
 
-    pinMode(TFT_BLK, OUTPUT);
-    digitalWrite(TFT_BLK, HIGH);
+    // pinMode(TFT_BLK, OUTPUT);
+    // digitalWrite(TFT_BLK, HIGH);
     lastActivityTime = millis();
 
     // [ĐÃ SỬA] Gọi hàm API chuẩn của HAL
@@ -48,10 +49,14 @@ void setup() {
     Input_Init();
     Audio_Init();     // [MỚI] Khởi tạo chân Loa
     
-    hspi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
-    Storage_Init();   // [MỚI] Khởi tạo Thẻ nhớ SD
+    // 1. LUÔN LUÔN KHỞI ĐỘNG ROOT FS TRƯỚC TIÊN
+    Storage_Init_RootFS();
+    
+    // 2. Nạp ngay cấu hình từ Root FS vào bộ nhớ RAM
+    Storage_LoadConfig();
 
     hspi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+    Storage_Init_SD();       // [MỚI] Khởi tạo Thẻ nhớ SD
 
     inputQueue = xQueueCreate(10, sizeof(InputEvent));
     renderQueue = xQueueCreate(5, sizeof(DisplayEvent)); 

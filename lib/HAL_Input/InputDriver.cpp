@@ -11,6 +11,10 @@ int Input_GetJoyY() {
     return analogRead(JOY_Y_PIN);
 }
 
+int Input_GetJoyX() {
+    return analogRead(JOY_X_PIN);
+}
+
 bool Input_IsHomePressed() {
     return digitalRead(JOY_SW_PIN) == LOW;
 }

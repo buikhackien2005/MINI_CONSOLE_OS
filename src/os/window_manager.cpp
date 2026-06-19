@@ -4,6 +4,7 @@
 #include "../../lib/HAL_Display/DisplayDriver.h"
 #include "../../lib/HAL_Input/InputDriver.h"
 #include "../apps/app_pingpong.h"
+#include "../apps/app_settings.h"
 
 extern volatile int system_state;
 extern volatile bool menu_selected;
@@ -14,8 +15,8 @@ bool force_redraw_menu = true;
 
 void drawMenu() {
     Display_FillScreen(COLOR_BLACK);
-    Display_DrawText("MINI OS", 20, 10, 2, COLOR_GREEN);
-    Display_DrawHLine(0, 30, 160, COLOR_GREEN);
+    Display_DrawText("MINI OS", 20, 5, 2, COLOR_GREEN);
+    Display_DrawHLine(0, 25, 160, COLOR_GREEN);
 
     // 0x8410 là mã màu Xám đậm (Gray)
     if (menu_index == 0) { 
@@ -31,8 +32,17 @@ void drawMenu() {
     } else {
         Display_DrawText("> 2. Music Player", 15, 80, 1, 0x8410);
     }
+
+    // Dòng 1 và 2 cũ giữ nguyên...
+    if (menu_index == 2) { 
+        Display_DrawRect(10, 105, 140, 20, COLOR_BLUE); 
+        Display_DrawText("> 3. Settings", 15, 110, 1, COLOR_WHITE);
+    } else {
+        Display_DrawText("> 3. Settings", 15, 110, 1, 0x8410);
+    }
     
-    Display_DrawText("Giu 'SW' 1.5s de Thoat", 10, 110, 1, COLOR_YELLOW);
+    // Dòng chữ thoát sẽ nằm an toàn ở dưới cùng
+    Display_DrawText("Giu 'SW' 1.5s de Thoat", 10, 115, 1, COLOR_YELLOW);
 }
 
 void WindowManagerTask(void *pvParameters) {
@@ -47,7 +57,7 @@ void WindowManagerTask(void *pvParameters) {
             if (joyY < 1000 && menu_index > 0) {
                 menu_index--; drawMenu(); lastActivityTime = millis();
                 vTaskDelay(200 / portTICK_PERIOD_MS); 
-            } else if (joyY > 3000 && menu_index < 1) {
+            } else if (joyY > 3000 && menu_index < 2) {
                 menu_index++; drawMenu(); lastActivityTime = millis();
                 vTaskDelay(200 / portTICK_PERIOD_MS);
             }
@@ -62,6 +72,11 @@ void WindowManagerTask(void *pvParameters) {
                     Display_FillScreen(COLOR_BG);
                     Display_DrawText("MP3 PLAYER", 25, 40, 2, COLOR_WHITE);
                     system_state = 2; 
+                } else if (menu_index == 2) {
+                    // [MỚI] Gọi App Settings
+                    Serial.println("[OS] Launching Settings App...");
+                    system_state = 3; 
+                    AppSettings_Start(); 
                 }
             }
         } 

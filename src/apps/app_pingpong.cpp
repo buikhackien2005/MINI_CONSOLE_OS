@@ -7,6 +7,9 @@
 #include "../../lib/HAL_Display/DisplayDriver.h"
 #include "../../lib/HAL_Input/InputDriver.h"
 
+#include "../../include/events.h"   // Lấy cấu trúc lá đơn (MediaEvent)
+extern QueueHandle_t mediaQueue;    // Lấy hòm thư của Hệ điều hành
+
 extern volatile int system_state;
 extern int max_score;
 extern float base_paddle_speed;
@@ -68,14 +71,24 @@ void PingPongTask(void *pvParameters) {
             if (ball_y + 4 >= ai_y && ball_y <= ai_y + paddle_h) {
                 ball_x = margin + paddle_w; ball_dx = -ball_dx;
                 ball_dx *= SPEED_MULTIPLIER; ball_dy *= SPEED_MULTIPLIER;
-                paddle_speed *= SPEED_MULTIPLIER; ai_speed *= SPEED_MULTIPLIER;     
+                paddle_speed *= SPEED_MULTIPLIER; ai_speed *= SPEED_MULTIPLIER;
+                
+                // [MỚI - TẦNG 3] Gửi yêu cầu phát tiếng Bíp cho OS
+                MediaEvent beepCmd; 
+                beepCmd.cmdType = 1; 
+                xQueueSend(mediaQueue, &beepCmd, 0);
             }
         }
         if (ball_x + 4 >= SCR_W - margin - paddle_w && ball_x <= SCR_W - margin) {
             if (ball_y + 4 >= player_y && ball_y <= player_y + paddle_h) {
                 ball_x = SCR_W - margin - paddle_w - 4; ball_dx = -ball_dx;
                 ball_dx *= SPEED_MULTIPLIER; ball_dy *= SPEED_MULTIPLIER;
-                paddle_speed *= SPEED_MULTIPLIER; ai_speed *= SPEED_MULTIPLIER;     
+                paddle_speed *= SPEED_MULTIPLIER; ai_speed *= SPEED_MULTIPLIER;
+                
+                // [MỚI - TẦNG 3] Gửi yêu cầu phát tiếng Bíp cho OS
+                MediaEvent beepCmd; 
+                beepCmd.cmdType = 1; 
+                xQueueSend(mediaQueue, &beepCmd, 0);
             }
         }
 
@@ -91,6 +104,12 @@ void PingPongTask(void *pvParameters) {
                 Display_FillScreen(COLOR_BG);
                 if (score_player >= max_score) Display_DrawText("YOU WIN!", 35, 40, 2, COLOR_YELLOW);
                 else Display_DrawText("AI WINS!", 35, 40, 2, COLOR_YELLOW);
+
+                // [MỚI - TẦNG 3] Gửi yêu cầu ghi lịch sử trận đấu xuống thẻ nhớ
+                MediaEvent logCmd; 
+                logCmd.cmdType = 2;
+                sprintf(logCmd.logData, "Pong Game Over! Score: AI %d - Player %d", score_ai, score_player);
+                xQueueSend(mediaQueue, &logCmd, 0);
                 
                 vTaskDelay(3000 / portTICK_PERIOD_MS); 
                 system_state = 0; 

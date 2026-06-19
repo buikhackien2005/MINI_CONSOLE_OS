@@ -1,5 +1,6 @@
 #include <TFT_eSPI.h>
 #include "DisplayDriver.h"
+#include "../../include/config.h"
 
 // Biến tft vật lý được giam lỏng ở đây, không cho thoát ra ngoài!
 TFT_eSPI tft = TFT_eSPI();
@@ -8,6 +9,19 @@ void Display_Init() {
     tft.init();
     tft.setRotation(1);
     tft.fillScreen(COLOR_BLACK);
+
+    // [MỚI] Cấu hình PWM cho Đèn nền màn hình (Kênh 0, Tần số 5000Hz, Phân giải 8-bit)
+    ledcSetup(0, 5000, 8);
+    ledcAttachPin(TFT_BLK, 0);
+}
+
+void Display_SetBrightness(int percent) {
+    if (percent < 10) percent = 10;   // Không cho tắt tối thui
+    if (percent > 100) percent = 100;
+    
+    // Đổi từ 0-100% sang thang đo 0-255 của PWM 8-bit
+    int duty_cycle = (percent * 255) / 100; 
+    ledcWrite(0, duty_cycle);
 }
 
 void Display_FillScreen(uint16_t color) { tft.fillScreen(color); }

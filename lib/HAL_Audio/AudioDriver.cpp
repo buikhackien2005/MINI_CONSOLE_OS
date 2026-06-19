@@ -48,7 +48,7 @@ void Audio_PlayBeep() {
     // Phát âm thanh trong 0.05 giây (Chạm bóng phát tiếng tạch ngắn)
     for (int i = 0; i < SAMPLE_RATE / 20; i++) { 
         if ((i / half_period) % 2 == 0) {
-            sample = 1500;  // Biên độ dương (1500 là âm lượng vừa phải, tối đa là 32767)
+            sample = 15000;  // Biên độ dương (1500 là âm lượng vừa phải, tối đa là 32767)
         } else {
             sample = -1500; // Biên độ âm
         }

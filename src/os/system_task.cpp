@@ -22,6 +22,7 @@ void SystemTask(void *pvParameters) {
             // NẾU CÓ TIN NHẮN TỪ APP GỬI TỚI -> RA LỆNH CHO HAL THỰC THI
             switch (receivedEvent.cmdType) {
                 case 1: 
+                    // Serial.println("[OS] Da nhan lenh phat BEEP! Dang day ra I2S..."); // Bổ sung dòng này
                     Audio_PlayBeep(); 
                     break;
                 case 2: 

@@ -12,6 +12,7 @@
 #define COLOR_BG     0x0008 // Màu nền xanh đen của Game
 
 void Display_Init();
+void Display_SetBrightness(int percent); // [MỚI]
 void Display_FillScreen(uint16_t color);
 void Display_DrawRect(int x, int y, int w, int h, uint16_t color);
 void Display_DrawVLine(int x, int y, int h, uint16_t color);
