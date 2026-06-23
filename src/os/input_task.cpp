@@ -27,7 +27,7 @@ void InputTask(void *pvParameters) {
                 }
             } 
             else if (holdDuration > 50) {
-                if (system_state == 0 || system_state == 3) menu_selected = true; 
+                if (system_state == 0 || system_state == 2 || system_state == 3) menu_selected = true; 
             }
         }
         vTaskDelay(50 / portTICK_PERIOD_MS); 

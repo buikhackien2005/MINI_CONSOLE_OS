@@ -20,6 +20,7 @@ volatile int system_state = 0;
 volatile bool menu_selected = false;
 volatile bool request_full_redraw = false; // [MỚI] Cờ báo hiệu cần khôi phục giao diện
 int system_brightness = 100;   // [MỚI] Biến lưu độ sáng màn hình (10% - 100%)
+int system_sleep_timeout = 30; // Thời gian chờ sleep (giây). 0 = không bao giờ sleep
 
 // [MỚI] Biến lưu trữ thời gian thực (Mặc định khởi động là 12:00:00)
 int sys_hour = 12;

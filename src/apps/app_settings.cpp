@@ -15,6 +15,7 @@ extern int system_brightness;
 extern int sys_hour;
 extern int sys_minute;
 extern int sys_second;
+extern int system_sleep_timeout; // Thời gian sleep (giây, 0 = không bao giờ sleep)
 
 // [MỚI] Quản lý Trang (0: Màn hình chính, 1: Màn hình chỉnh giờ)
 static int settings_page = 0; 
@@ -33,22 +34,36 @@ static void drawSettingsUI() {
 
         // 1. Độ sáng
         uint16_t c1 = (settings_index == 0) ? COLOR_WHITE : 0x8410;
-        Display_DrawText("1. Brightness", 5, 45, 1, c1);
+        Display_DrawText("1. Brightness", 5, 40, 1, c1);
         if (settings_index == 0) {
-            Display_DrawText("<", 100, 45, 1, COLOR_GREEN);
-            Display_DrawInt(system_brightness, 115, 45, 1, c1, COLOR_BG);
-            Display_DrawText(">", 140, 45, 1, COLOR_GREEN);
+            Display_DrawText("<", 95, 40, 1, COLOR_GREEN);
+            Display_DrawInt(system_brightness, 108, 40, 1, c1, COLOR_BG);
+            Display_DrawText(">", 126, 40, 1, COLOR_GREEN);
         } else {
-            Display_DrawInt(system_brightness, 115, 45, 1, c1, COLOR_BG);
+            Display_DrawInt(system_brightness, 108, 40, 1, c1, COLOR_BG);
         }
 
-        // 2. Chuyển sang Cài đặt Thời gian
+        // 2. Sleep Timeout [MỚI]
         uint16_t c2 = (settings_index == 1) ? COLOR_WHITE : 0x8410;
-        Display_DrawText("2. Time Settings", 5, 65, 1, c2);
+        Display_DrawText("2. Sleep", 5, 57, 1, c2);
+        char to_str[6];
+        if (system_sleep_timeout == 0) strcpy(to_str, "OFF");
+        else sprintf(to_str, "%ds", system_sleep_timeout);
+        if (settings_index == 1) {
+            Display_DrawText("<", 72, 57, 1, COLOR_GREEN);
+            Display_DrawText(to_str, 84, 57, 1, c2);
+            Display_DrawText(">", 114, 57, 1, COLOR_GREEN);
+        } else {
+            Display_DrawText(to_str, 84, 57, 1, c2);
+        }
 
-        // 3. Lưu & Thoát
-        uint16_t c3 = (settings_index == 2) ? COLOR_GREEN : 0x8410;
-        Display_DrawText("3. SAVE & EXIT", 30, 95, 1, c3);
+        // 3. Chuyển sang Cài đặt Thời gian
+        uint16_t c3 = (settings_index == 2) ? COLOR_WHITE : 0x8410;
+        Display_DrawText("3. Time Settings", 5, 74, 1, c3);
+
+        // 4. Lưu & Thoát
+        uint16_t c4 = (settings_index == 3) ? COLOR_GREEN : 0x8410;
+        Display_DrawText("4. SAVE & EXIT", 20, 100, 1, c4);
     } 
     // ==========================================
     // TRANG 1: MÀN HÌNH CHỈNH THỜI GIAN
@@ -113,7 +128,7 @@ void SettingsTask(void *pvParameters) {
         if (joyY < 1000 && settings_index > 0) {
             settings_index--; force_redraw = true; lastActivityTime = millis();
             vTaskDelay(200 / portTICK_PERIOD_MS); 
-        } else if (joyY > 3000 && settings_index < 2) { 
+        } else if (joyY > 3000 && settings_index < 3) { 
             settings_index++; force_redraw = true; lastActivityTime = millis();
             vTaskDelay(200 / portTICK_PERIOD_MS);
         }
@@ -133,6 +148,14 @@ void SettingsTask(void *pvParameters) {
                 force_redraw = true; lastActivityTime = millis();
                 vTaskDelay(150 / portTICK_PERIOD_MS); 
             } 
+            else if (settings_page == 0 && settings_index == 1) { // Sleep Timeout [MỚI]
+                if (is_left) system_sleep_timeout -= 15;
+                else         system_sleep_timeout += 15;
+                if (system_sleep_timeout < 0)   system_sleep_timeout = 0;   // 0 = OFF
+                if (system_sleep_timeout > 120) system_sleep_timeout = 120;
+                force_redraw = true; lastActivityTime = millis();
+                vTaskDelay(150 / portTICK_PERIOD_MS);
+            }
             else if (settings_page == 1) { // Đang ở Trang 1
                 if (settings_index == 0) { // Chỉnh Giờ
                     if (is_left) sys_hour--; else sys_hour++;
@@ -156,11 +179,11 @@ void SettingsTask(void *pvParameters) {
             lastActivityTime = millis();
             
             if (settings_page == 0) {
-                if (settings_index == 1) { // Click "Time Settings"
+                if (settings_index == 2) { // Click "Time Settings"
                     settings_page = 1;     // Nhảy sang Trang 1
                     settings_index = 0;    // Reset con trỏ
                     force_redraw = true;
-                } else if (settings_index == 2) { // Click "SAVE & EXIT"
+                } else if (settings_index == 3) { // Click "SAVE & EXIT"
                     Storage_SaveConfig(); 
                     Display_FillScreen(COLOR_BG);
                     Display_DrawText("SAVED!", 50, 60, 2, COLOR_GREEN);

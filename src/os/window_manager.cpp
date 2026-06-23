@@ -5,6 +5,7 @@
 #include "../../lib/HAL_Input/InputDriver.h"
 #include "../apps/app_pingpong.h"
 #include "../apps/app_settings.h"
+#include "../apps/app_music.h"
 
 extern volatile int system_state;
 extern volatile bool menu_selected;
@@ -74,9 +75,9 @@ void WindowManagerTask(void *pvParameters) {
                     system_state = 1; 
                     AppPingPong_Start(); 
                 } else if (menu_index == 1) {
-                    Display_FillScreen(COLOR_BG);
-                    Display_DrawText("MP3 PLAYER", 25, 40, 2, COLOR_WHITE);
-                    system_state = 2; 
+                    Serial.println("[OS] Launching Music Player...");
+                    system_state = 2;
+                    AppMusic_Start();
                 } else if (menu_index == 2) {
                     // [MỚI] Gọi App Settings
                     Serial.println("[OS] Launching Settings App...");

@@ -10,6 +10,7 @@ extern SPIClass hspi;
 extern int max_score;             
 extern float base_paddle_speed;
 extern int system_brightness;     // [SỬA Ở ĐÂY 2] Thêm dòng này để mượn biến độ sáng từ main.cpp sang
+extern int system_sleep_timeout;  // Thời gian sleep (giây)
 
 // [MỚI] Cờ trạng thái theo dõi xem thẻ SD có đang được cắm không
 bool is_sd_mounted = false;
@@ -70,6 +71,7 @@ void Storage_LoadConfig() {
         if (line.startsWith("MAX_SCORE=")) max_score = line.substring(10).toInt();
         else if (line.startsWith("PADDLE_SPEED=")) base_paddle_speed = line.substring(13).toFloat();
         else if (line.startsWith("BRIGHTNESS=")) system_brightness = line.substring(11).toInt();
+        else if (line.startsWith("SLEEP_TIMEOUT_SEC=")) system_sleep_timeout = line.substring(18).toInt();
     }
     f.close();
     
@@ -84,6 +86,7 @@ void Storage_SaveConfig() {
         f.printf("MAX_SCORE=%d\n", max_score);
         f.printf("PADDLE_SPEED=%.1f\n", base_paddle_speed);
         f.printf("BRIGHTNESS=%d\n", system_brightness);
+        f.printf("SLEEP_TIMEOUT_SEC=%d\n", system_sleep_timeout);
         f.close();
         Serial.println("[OS] Da luu cau hinh vao RootFS!");
     } else {

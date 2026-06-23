@@ -1,60 +1,84 @@
 #include <Arduino.h>
-#include <driver/i2s.h>
 #include "../../include/config.h"
 #include "AudioDriver.h"
+#include <SD.h>
+#include "Audio.h" // Thư viện giải mã MP3
 
-#define I2S_PORT I2S_NUM_0
-#define SAMPLE_RATE 16000
+// [QUAN TRỌNG NHẤT] Khởi tạo đối tượng 'audio' TOÀN CỤC ở đây để các hàm bên dưới có thể dùng!
+Audio audio; 
+
+// Cờ báo hiệu bài hát vừa kết thúc (được set bởi callback audio_eof_mp3)
+static volatile bool s_track_ended = false; 
 
 void Audio_Init() {
-    Serial.println("[HAL] Dang khoi tao Amply I2S...");
-    
-    // 1. Cấu hình thông số kỹ thuật cho I2S
-    i2s_config_t i2s_config = {
-        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
-        .sample_rate = SAMPLE_RATE,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-        .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // Phát mono 1 kênh
-        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-        .dma_buf_count = 8,
-        .dma_buf_len = 64,
-        .use_apll = false,
-        .tx_desc_auto_clear = true,
-        .fixed_mclk = 0
-    };
-
-    // 2. Map các chân vật lý từ config.h
-    i2s_pin_config_t pin_config = {
-        .bck_io_num = I2S_BCLK,
-        .ws_io_num = I2S_LRC,
-        .data_out_num = I2S_DIN,
-        .data_in_num = I2S_PIN_NO_CHANGE
-    };
-
-    // 3. Cài đặt driver và xóa nhiễu DMA
-    i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
-    i2s_set_pin(I2S_PORT, &pin_config);
-    i2s_zero_dma_buffer(I2S_PORT); 
-}
+    // Tạm thời để trống.                                                 
+    // Chúng ta không dùng driver i2s gốc của ESP32 nữa để tránh tranh chấp phần cứng với thư viện MP3.
+}                                                                                                                                                                   
 
 void Audio_PlayBeep() {
-    // Tạo một sóng vuông (Square wave) đơn giản ở tần số 1000Hz làm tiếng Bíp
-    size_t bytes_written;
-    int16_t sample = 0;
-    int frequency = 1000; 
-    int half_period = SAMPLE_RATE / frequency / 2;
+    // Tạm thời để trống. (Sẽ dùng Amply I2S phát file tiếng Beep .mp3 sau nếu cần)
+}
 
-    // Phát âm thanh trong 0.05 giây (Chạm bóng phát tiếng tạch ngắn)
-    for (int i = 0; i < SAMPLE_RATE / 20; i++) { 
-        if ((i / half_period) % 2 == 0) {
-            sample = 15000;  // Biên độ dương (1500 là âm lượng vừa phải, tối đa là 32767)
-        } else {
-            sample = -1500; // Biên độ âm
-        }
-        i2s_write(I2S_PORT, &sample, sizeof(sample), &bytes_written, portMAX_DELAY);
-    }
-    
-    // Đẩy tín hiệu rỗng để loa lập tức im lặng, tránh nhiễu rè xì xì
-    i2s_zero_dma_buffer(I2S_PORT); 
+// ==========================================
+// [MỚI] TRÌNH ĐIỀU KHIỂN MP3 QUA I2S
+// ==========================================
+void Audio_InitI2S() {
+    Serial.println("[HAL] Khoi tao Amply I2S bang ESP32-audioI2S...");
+    audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DIN);
+    audio.setVolume(15); // Âm lượng mặc định khi khởi động (app sẽ override ngay sau)
+    s_track_ended = false; // Reset cờ khi khởi tạo
+}
+
+void Audio_PlayMusic(const char* path) {
+    audio.connecttoFS(SD, path);
+}
+
+void Audio_PauseResume() {
+    audio.pauseResume();
+}
+
+void Audio_Stop() {
+    audio.stopSong();
+}
+
+void Audio_Loop() {
+    audio.loop(); // Liên tục nạp dữ liệu từ SD vào bộ đệm I2S
+}
+
+bool Audio_IsPlaying() {
+    return audio.isRunning();
+}
+
+void Audio_SetVolume(int vol) {
+    if (vol < 0)  vol = 0;
+    if (vol > 20) vol = 20;
+    audio.setVolume(vol);
+}
+
+bool Audio_IsTrackEnded() {
+    return s_track_ended;
+}
+
+void Audio_ClearTrackEnded() {
+    s_track_ended = false;
+}
+
+// ==========================================
+// CÁC HÀM LẮNG NGHE LOG TỪ THƯ VIỆN AUDIO
+// ==========================================
+void audio_info(const char *info){
+    Serial.print("[AUDIO INFO] "); Serial.println(info);
+}
+
+void audio_showstation(const char *info){
+    Serial.print("[AUDIO STATION] "); Serial.println(info);
+}
+
+void audio_showstreamtitle(const char *info){
+    Serial.print("[AUDIO TITLE] "); Serial.println(info);
+}
+
+void audio_eof_mp3(const char *info){  // Gọi khi hát hết bài
+    Serial.print("[AUDIO EOF] Het bai: "); Serial.println(info);
+    s_track_ended = true; // Bật cờ để MusicTask tự chuyển bài tiếp
 }
